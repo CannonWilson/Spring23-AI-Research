@@ -14,7 +14,7 @@ import csv
 print('Initializing Models')
 
 # Custom model
-CUSTOM_MODEL_PATH = './my_age_model.pth'
+CUSTOM_MODEL_PATH = './smiling_age_model.pth'
 custom_model = CustomAgeNetwork()
 custom_model.load_state_dict(torch.load(CUSTOM_MODEL_PATH))
 
@@ -23,8 +23,8 @@ data_transforms = transforms.Compose([
     transforms.ToTensor()
 ])
 
-BASE_DIR = './val_new' # SVM is trained on *validation* set
-TRAIN_DIR = './train_new'
+BASE_DIR = './val' # SVM is trained on *validation* set
+TRAIN_DIR = './train'
 val_data = datasets.ImageFolder(BASE_DIR, transform=data_transforms)
 val_loader = DataLoader(val_data, batch_size=1)
 NUM_CLASSES = 2
