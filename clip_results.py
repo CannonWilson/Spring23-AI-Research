@@ -1,15 +1,16 @@
-from age_model import CustomAgeNetwork
+import os
+import csv
+import torch
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
-import torch
 import clip
-import os
+from PIL import Image
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from PIL import Image
 from sklearn import svm
-import csv
+from age_model import CustomAgeNetwork
+
 
 print('Initializing Models')
 
@@ -36,17 +37,17 @@ for root, dirs, files in os.walk(BASE_DIR):
 TOTAL_TRAIN_IMAGES = total
 
 
-# CLIP
+# Setup CLIP model
 EMBEDDING_DIM = 512
-device = "cuda" if torch.cuda.is_available() else "cpu"
-clip_model, clip_preprocess = clip.load("ViT-B/32", device=device)
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+clip_model, clip_preprocess = clip.load("ViT-B/32", device=DEVICE)
 
-# Other variables
-img_feature_stack = torch.empty(TOTAL_TRAIN_IMAGES, EMBEDDING_DIM).to(device)
-correctness = torch.empty(TOTAL_TRAIN_IMAGES, dtype=torch.int8).to(device)
+# Other variables, tensors to store embeddings and correctness results
+img_feature_stack = torch.empty(TOTAL_TRAIN_IMAGES, EMBEDDING_DIM).to(DEVICE)
+correctness = torch.empty(TOTAL_TRAIN_IMAGES, dtype=torch.int8).to(DEVICE)
 file_paths = []
 
-# Get the feature embeddings and calculate correctness 
+# Get the feature embeddings and calculate correctness
 # for every training image
 with torch.no_grad():
     custom_model.eval()
@@ -61,7 +62,7 @@ with torch.no_grad():
         actual = label.item()
         if pred == actual:
             correctness[i] = 1
-        else: 
+        else:
             correctness[i] = -1
 
         # Store file path
@@ -70,7 +71,7 @@ with torch.no_grad():
 
         # Generate CLIP embedding
         pil_image = Image.open(path)
-        clip_img = clip_preprocess(pil_image).unsqueeze(0).to(device)
+        clip_img = clip_preprocess(pil_image).unsqueeze(0).to(DEVICE)
         img_features = clip_model.encode_image(clip_img)
         img_feature_stack[i] = img_features
 
@@ -79,15 +80,15 @@ print('Beginning to fit SVM classifiers')
 
 SHOW_RESULTS = False
 SAVE_RESULTS = True
-RESULTS_FILE = './4-4_results.csv'
+RESULTS_FILE = './4-11_results.csv'
 last_seen_class = file_paths[0].split('/')[2] # either 'old' or 'young'
-start_idx = 0
-end_idx = 0
+start_idx = 0 # pylint: disable=invalid-name,line-too-long
+end_idx = 0 # pylint: disable=invalid-name,line-too-long
 
 if SAVE_RESULTS: # Setup for save
-    f = open(RESULTS_FILE, 'w')
+    f = open(RESULTS_FILE, 'w', encoding='utf-8')
     writer = csv.writer(f)
-    header_str = 'filename,5_o_Clock_Shadow,Arched_Eyebrows,Attractive,Bags_Under_Eyes,Bald,Bangs,Big_Lips,Big_Nose,Black_Hair,Blond_Hair,Blurry,Brown_Hair,Bushy_Eyebrows,Chubby,Double_Chin,Eyeglasses,Goatee,Gray_Hair,Heavy_Makeup,High_Cheekbones,Male,Mouth_Slightly_Open,Mustache,Narrow_Eyes,No_Beard,Oval_Face,Pale_Skin,Pointy_Nose,Receding_Hairline,Rosy_Cheeks,Sideburns,Smiling,Straight_Hair,Wavy_Hair,Wearing_Earrings,Wearing_Hat,Wearing_Lipstick,Wearing_Necklace,Wearing_Necktie,Young'
+    header_str = 'filename,5_o_Clock_Shadow,Arched_Eyebrows,Attractive,Bags_Under_Eyes,Bald,Bangs,Big_Lips,Big_Nose,Black_Hair,Blond_Hair,Blurry,Brown_Hair,Bushy_Eyebrows,Chubby,Double_Chin,Eyeglasses,Goatee,Gray_Hair,Heavy_Makeup,High_Cheekbones,Male,Mouth_Slightly_Open,Mustache,Narrow_Eyes,No_Beard,Oval_Face,Pale_Skin,Pointy_Nose,Receding_Hairline,Rosy_Cheeks,Sideburns,Smiling,Straight_Hair,Wavy_Hair,Wearing_Earrings,Wearing_Hat,Wearing_Lipstick,Wearing_Necklace,Wearing_Necktie,Young' #pylint: disable=invalid-name,line-too-long
     writer.writerow(['DS_Score', 'Correctness', *header_str.split(',')])
     celeba_df = pd.read_csv('list_attr_celeba.csv')
 
@@ -102,11 +103,11 @@ for i, img_path in enumerate(file_paths):
         svm_classifier = svm.SVC(kernel="linear")
         svm_classifier.fit(img_feature_stack[start_idx:end_idx], \
             correctness[start_idx:end_idx])
-        
+
         # Then, loop over the CLIP embeddings for the class and 
         # store the decision scores
         print('Calculating decision scores for class: ', last_seen_class)
-        num_images_in_class = end_idx - start_idx
+        num_images_in_class = end_idx - start_idx # pylint: disable=invalid-name
         decision_scores = np.empty(num_images_in_class)
         for idx in range(num_images_in_class):
             score = np.dot(svm_classifier.coef_[0].transpose(), \
@@ -146,9 +147,10 @@ for i, img_path in enumerate(file_paths):
 
         # Increment variables for next class
         last_seen_class = cur_class
-        start_idx = end_idx
+        start_idx = end_idx # pylint: disable=invalid-name,line-too-long
 
 if SAVE_RESULTS:
     f.close()
 
-plt.show()
+if SHOW_RESULTS:
+    plt.show()

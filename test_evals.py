@@ -1,10 +1,10 @@
-from age_model import CustomAgeNetwork
+import torch
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
-import torch
+from age_model import CustomAgeNetwork
 
 # Custom model
-MODEL_PATH = "(old)my_age_model.pth" # Not smiling: './my_age_model.pth'
+MODEL_PATH = "my_age_model.pth" # Not smiling: './my_age_model.pth'
 model = CustomAgeNetwork()
 model.load_state_dict(torch.load(MODEL_PATH))
 
@@ -13,16 +13,28 @@ data_transforms = transforms.Compose([
     transforms.ToTensor()
 ])
 
-val_data = datasets.ImageFolder("./val", transform=data_transforms) # !!Right now, using validation data instead of test data 
-val_loader = DataLoader(val_data, batch_size=1)
-train_data = datasets.ImageFolder("./train", transform=data_transforms)
-train_loader = DataLoader(train_data, batch_size=1)
-test_data = datasets.ImageFolder("./test", transform=data_transforms)
-test_loader = DataLoader(test_data, batch_size=1)
+def loader(dirn):
+    """ 
+    Create data using torchvision 
+    ImageFolder and torch DataLoader.
+    Assumes batch_size=1.
+    """
+    return DataLoader(datasets.ImageFolder(dirn, transform=data_transforms), batch_size = 1)
+
+TRAIN_DIR, VAL_DIR, TEST_DIR = './train', './val', './test'
+train_loader, val_loader, test_loader = loader(TRAIN_DIR), loader(VAL_DIR), loader(TEST_DIR)
 
 def test_acc(data_loader, mode):
+    """
+    Loop through the data loader
+    to calculate the accuracy 
+    over the entire dataset.
+    mode is a string in 
+    {"train", "val", "test"}
+    """
 
-    results = { # stores number of correct classifications for each category
+    # stores number of correct classifications for each subgroup
+    results = {
         'old_female_no_smile': {
             'correct': 0,
             'total': 0
@@ -64,7 +76,7 @@ def test_acc(data_loader, mode):
         model.eval()
         for i, (images, labels) in enumerate(data_loader):
 
-            # Custom model 
+            # Custom model
             outputs = model(images)
             _, predicted = torch.max(outputs.data, 1)
             pred = predicted.item()
@@ -81,10 +93,10 @@ def test_acc(data_loader, mode):
 
 
     print(f'TOTAL {mode.upper()} ACCURACY: ', round(100 * total_correct/ total_num) / 100)
-    for key in results.keys():
+    for key, val in results.items():
         print(key.upper(), " ACCURACY: ", \
-            round(100 * results[key]['correct'] / results[key]['total']) / 100)
-        
+            round(100 * val['correct'] / val['total']) / 100)
+
 if __name__ == "__main__":
     # test_acc(train_loader, "train")
     # test_acc(val_loader, "val")
