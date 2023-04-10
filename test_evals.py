@@ -2,14 +2,11 @@ from age_model import CustomAgeNetwork
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
 import torch
-import pandas as pd
-import numpy as np
-import os
 
 # Custom model
-MODEL_PATH = './smiling_age_model.pth'
+MODEL_PATH = "(old)my_age_model.pth" # Not smiling: './my_age_model.pth'
 model = CustomAgeNetwork()
-model.load_state_dict(torch.load('./smiling_age_model.pth'))
+model.load_state_dict(torch.load(MODEL_PATH))
 
 data_transforms = transforms.Compose([
     transforms.Resize((82, 100)),
