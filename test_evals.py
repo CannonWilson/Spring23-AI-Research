@@ -3,6 +3,7 @@ from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
 import torch
 import pandas as pd
+import numpy as np
 import os
 
 # Custom model
@@ -61,6 +62,7 @@ def test_acc(data_loader, mode):
 
     total_correct = 0
     total_num = 0
+
     with torch.no_grad():
         model.eval()
         for i, (images, labels) in enumerate(data_loader):
@@ -79,6 +81,7 @@ def test_acc(data_loader, mode):
                 results[full_key]['correct'] = results[full_key]['correct'] + 1
             results[full_key]['total'] = results[full_key]['total'] + 1
             total_num += 1
+
 
     print(f'TOTAL {mode.upper()} ACCURACY: ', round(100 * total_correct/ total_num) / 100)
     for key in results.keys():
