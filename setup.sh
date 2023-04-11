@@ -6,12 +6,12 @@
 # This file assumes python is downloaded.
 
 # Make sure pip is installed & up to date, then install venv
-python -m ensurepip --upgrade
-python -m pip install --user --upgrade pip
-python -m pip install --user virtualenv
+python3 -m ensurepip --upgrade
+python3 -m pip install --user --upgrade pip
+python3 -m pip install --user virtualenv
 
 # Start by creating/activating the env
-python -m venv research-env
+python3 -m venv research-env
 source research-env/bin/activate
 
 # Pip install packages into env
@@ -21,6 +21,6 @@ pip install -r requirements.txt
 gdown "https://drive.google.com/uc?id=1HpoLLP9x7ON5nn5TnC7CPf2uoRnO2VnD"
 
 # Create and fill the train/val/test directories
-python make_dataset.py
+python3 make_dataset.py
 
 echo "### Thanks for downloading, setup is now complete. ###"
