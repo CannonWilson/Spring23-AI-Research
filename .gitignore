@@ -6,6 +6,13 @@ test
 
 idea/
 
+# My vscode stuff
+.vscode
+.pylintrc
+
+# Virtual environment (gets created in setup process)
+research-env
+
 # Created by https://www.gitignore.io/api/macos,linux,django,python,pycharm
 
 ### Django ###

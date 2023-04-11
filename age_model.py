@@ -68,7 +68,7 @@ class CustomAgeNetwork(nn.Module):
         x = self.bn7(F.relu(self.conv7(x)))
         x = self.bn8(F.max_pool2d(F.relu(self.conv8(x)), 2))
         # FC Layers
-        x = x.view(x.shape[0],-1)
+        x = x.view(x.shape[0],-1) # flatten out x
         x = F.relu(self.fc1(x))
-        x = F.softmax(self.fc2(x))
+        x = F.softmax(self.fc2(x), dim=1)
         return x

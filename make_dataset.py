@@ -14,16 +14,44 @@ from itertools import islice
 from pathlib import Path
 import pandas as pd
 
+CELEB_DIR = 'img_align_celeba'
+assert os.path.exists(CELEB_DIR), \
+    "CelebA directory was not successfully installed"
+PARTITION_FILE = 'list_eval_partition.txt'
+assert os.path.exists(PARTITION_FILE), \
+    "list_eval_partition.txt is not in root directory"
+CSV_FILE = 'list_attr_celeba.csv'
+assert os.path.exists(CSV_FILE), \
+    "list_attr_celeba.csv is not in root directory"
 
-CELEB_DIR = './img_align_celeba_3'
-TRAIN_DIR = './train'
-VAL_DIR = './val'
-TEST_DIR = './test'
-PARTITION_FILE = './list_eval_partition.txt'
+# Create the train/val/test directories
+TRAIN_DIR = 'train'
+VAL_DIR = 'val'
+TEST_DIR = 'test'
+
+# Remove train/val/test directories if they already exist
+for data_dir in [TRAIN_DIR, VAL_DIR, TEST_DIR]:
+    if os.path.exists(data_dir) and os.path.isdir(data_dir):
+        shutil.rmtree(data_dir)
+
+SUB_DIRS = [os.path.join("old", "male", "smile"), 
+            os.path.join("old", "male", "no_smile"),
+            os.path.join("old", "female", "smile"), 
+            os.path.join("old", "female", "no_smile"),
+            os.path.join("young", "male", "smile"), 
+            os.path.join("young", "male", "no_smile"),
+            os.path.join("young", "female", "smile"), 
+            os.path.join("young", "female", "no_smile")]
+
+for sdir in SUB_DIRS:
+    tr_dir = os.path.join(TRAIN_DIR, sdir)
+    va_dir = os.path.join(VAL_DIR, sdir)
+    te_dir = os.path.join(TEST_DIR, sdir)
+    Path(sdir).mkdir(parents=True, exist_ok=True) 
 
 celeb_dir_path = Path(CELEB_DIR)
 celeb_paths = [i.path for i in islice(os.scandir(celeb_dir_path), None)]
-celeba_df = pd.read_csv('list_attr_celeba.csv')
+celeba_df = pd.read_csv(CSV_FILE)
 
 # (NEWEST) variables for dataset with 2 correlations - male, smile
 # 4:1 correlation for sex, 2:1 correlation for smiling
@@ -51,7 +79,7 @@ VAL_LIMS = {
 val_counts = {subgroup: 0 for subgroup in VAL_LIMS}
 
 # Read in attributes from csv
-celeba_df = pd.read_csv('list_attr_celeba.csv')
+celeba_df = pd.read_csv(CSV_FILE)
 count = 0 # pylint: disable=invalid-name
 
 for f_path in celeb_paths:

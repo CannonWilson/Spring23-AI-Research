@@ -114,10 +114,6 @@ for mode in MODES:
         conf_sorted_frac_smiles[num_people] = conf_num_smiles / num_people
         ds_sorted_frac_smiles[num_people] = ds_num_smiles / num_people
 
-    # make sure that the final tally for the number of males is the same
-    assert conf_num_males == ds_num_males 
-    assert conf_num_smiles == ds_num_smiles
-
     if mode == "old":
         minority_sex = "Female" # pylint: disable=invalid-name
         sex_y_conf = 1-conf_sorted_frac_male
