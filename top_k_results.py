@@ -8,6 +8,8 @@ from PIL import Image
 from sklearn import svm
 from age_model import CustomAgeNetwork
 
+np.seterr(all='raise')
+
 print('Initializing Models')
 
 # Custom model
@@ -62,10 +64,8 @@ for mode in MODES:
             pred = predicted.item()
             actual = label.item()
             if pred == actual:
-                # correctness[cur_idx] = 1
                 correctness.append(1)
             else:
-                # correctness[cur_idx] = -1
                 correctness.append(-1)
 
             # Record sex/smiling of current img
@@ -104,15 +104,15 @@ for mode in MODES:
     conf_sorted_frac_smiles = np.empty(IMGS_THIS_CLASS)
     ds_sorted_frac_smiles = np.empty(IMGS_THIS_CLASS)
 
-    for num_people in range(IMGS_THIS_CLASS):
+    for num_people in range(1, IMGS_THIS_CLASS+1):
         conf_num_males = conf_sorted_sexes[:num_people].sum()
         ds_num_males = ds_sorted_sexes[:num_people].sum()
         conf_num_smiles = conf_sorted_smiles[:num_people].sum()
         ds_num_smiles = ds_sorted_smiles[:num_people].sum()
-        conf_sorted_frac_male[num_people] = conf_num_males / num_people
-        ds_sorted_frac_male[num_people] = ds_num_males / num_people
-        conf_sorted_frac_smiles[num_people] = conf_num_smiles / num_people
-        ds_sorted_frac_smiles[num_people] = ds_num_smiles / num_people
+        conf_sorted_frac_male[num_people-1] = conf_num_males / num_people
+        ds_sorted_frac_male[num_people-1] = ds_num_males / num_people
+        conf_sorted_frac_smiles[num_people-1] = conf_num_smiles / num_people
+        ds_sorted_frac_smiles[num_people-1] = ds_num_smiles / num_people
 
     if mode == "old":
         minority_sex = "Female" # pylint: disable=invalid-name
