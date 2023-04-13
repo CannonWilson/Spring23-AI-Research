@@ -1,3 +1,5 @@
+import os
+from dotenv import load_dotenv
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
 import torch
@@ -8,12 +10,12 @@ from PIL import Image
 from sklearn import svm
 from age_model import CustomAgeNetwork
 
-np.seterr(all='raise')
+load_dotenv()
 
 print('Initializing Models')
 
 # Custom model
-CUSTOM_MODEL_PATH = './smiling_age_model.pth'
+CUSTOM_MODEL_PATH = os.getenv("MODEL_PATH")
 custom_model = CustomAgeNetwork()
 custom_model.load_state_dict(torch.load(CUSTOM_MODEL_PATH))
 
