@@ -9,12 +9,17 @@ included in the training/val sets.
 """
 
 import os
+from dotenv import load_dotenv
 import shutil
 from itertools import islice
 from pathlib import Path
 import pandas as pd
 
-CELEB_DIR = 'img_align_celeba'
+load_dotenv()
+
+SHOULD_COPY = True # Should the img files be copied or just moved?
+
+CELEB_DIR = os.getenv("CELEBA_DIR")
 assert os.path.exists(CELEB_DIR), \
     "CelebA directory was not successfully installed"
 PARTITION_FILE = 'list_eval_partition.txt'
@@ -25,29 +30,30 @@ assert os.path.exists(CSV_FILE), \
     "list_attr_celeba.csv is not in root directory"
 
 # Create the train/val/test directories
-TRAIN_DIR = 'train'
-VAL_DIR = 'val'
-TEST_DIR = 'test'
+TRAIN_DIR, VAL_DIR, TEST_DIR = os.getenv("TRAIN_DIR"), os.getenv("VAL_DIR"), os.getenv("TEST_DIR")
 
 # Remove train/val/test directories if they already exist
 for data_dir in [TRAIN_DIR, VAL_DIR, TEST_DIR]:
     if os.path.exists(data_dir) and os.path.isdir(data_dir):
+        print("Found existing TRAIN|VAL|TEST dir. Removing.")
         shutil.rmtree(data_dir)
 
-SUB_DIRS = [os.path.join("old", "male", "smile"), 
+SUB_DIRS = [os.path.join("old", "male", "smile"),
             os.path.join("old", "male", "no_smile"),
-            os.path.join("old", "female", "smile"), 
+            os.path.join("old", "female", "smile"),
             os.path.join("old", "female", "no_smile"),
-            os.path.join("young", "male", "smile"), 
+            os.path.join("young", "male", "smile"),
             os.path.join("young", "male", "no_smile"),
-            os.path.join("young", "female", "smile"), 
+            os.path.join("young", "female", "smile"),
             os.path.join("young", "female", "no_smile")]
 
 for sdir in SUB_DIRS:
     tr_dir = os.path.join(TRAIN_DIR, sdir)
     va_dir = os.path.join(VAL_DIR, sdir)
     te_dir = os.path.join(TEST_DIR, sdir)
-    Path(sdir).mkdir(parents=True, exist_ok=True) 
+    Path(tr_dir).mkdir(parents=True, exist_ok=True)
+    Path(va_dir).mkdir(parents=True, exist_ok=True)
+    Path(te_dir).mkdir(parents=True, exist_ok=True)
 
 celeb_dir_path = Path(CELEB_DIR)
 celeb_paths = [i.path for i in islice(os.scandir(celeb_dir_path), None)]
@@ -98,13 +104,19 @@ for f_path in celeb_paths:
     if train_counts[full_key] < TRAIN_LIMS[full_key]:
         # add file to training data
         destination_path = os.path.join(TRAIN_DIR, age, sex, smile)
-        shutil.move(f_path, destination_path)
+        if SHOULD_COPY:
+            shutil.copy(f_path, destination_path)
+        else: # if not copying, just move file
+            shutil.move(f_path, destination_path)
         train_counts[full_key] = train_counts[full_key] + 1
 
     elif val_counts[full_key] < VAL_LIMS[full_key]:
         # add file to validation data
         destination_path = os.path.join(VAL_DIR, age, sex, smile)
-        shutil.move(f_path, destination_path)
+        if SHOULD_COPY:
+            shutil.copy(f_path, destination_path)
+        else: # if not copying, just move file
+            shutil.move(f_path, destination_path)
         val_counts[full_key] = val_counts[full_key] + 1
 
 print("Finished creating training and validation sets.")

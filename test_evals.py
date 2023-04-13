@@ -1,15 +1,21 @@
+import os
+from dotenv import load_dotenv
 import torch
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
 from age_model import CustomAgeNetwork
 
+load_dotenv()
+
 # Custom model
-MODEL_PATH = "my_age_model.pth" # Not smiling: './my_age_model.pth'
+MODEL_PATH = os.getenv("MODEL_PATH")
 model = CustomAgeNetwork()
 model.load_state_dict(torch.load(MODEL_PATH))
 
+img_size = (os.getenv("IMG_WIDTH"), os.getenv("IMG_HEIGHT"))
+assert img_size == (75, 75), "Images must be 75x75"
 data_transforms = transforms.Compose([
-    transforms.Resize((82, 100)),
+    transforms.Resize(img_size),
     transforms.ToTensor()
 ])
 
@@ -21,7 +27,7 @@ def loader(dirn):
     """
     return DataLoader(datasets.ImageFolder(dirn, transform=data_transforms), batch_size = 1)
 
-TRAIN_DIR, VAL_DIR, TEST_DIR = './train', './val', './test'
+TRAIN_DIR, VAL_DIR, TEST_DIR = os.getenv("TRAIN_DIR"), os.getenv("VAL_DIR"), os.getenv("TEST_DIR")
 train_loader, val_loader, test_loader = loader(TRAIN_DIR), loader(VAL_DIR), loader(TEST_DIR)
 
 def test_acc(data_loader, mode):
@@ -84,7 +90,7 @@ def test_acc(data_loader, mode):
             f_path = data_loader.dataset.samples[i][0]
 
             # Use file path to get attributes
-            full_key = "_".join(f_path.split("/")[2:-1]) # ex: old_female_no_smile
+            full_key = "_".join(f_path.split("/")[-4:-1]) # ex: old_female_no_smile
             if pred == actual:
                 total_correct += 1
                 results[full_key]['correct'] = results[full_key]['correct'] + 1

@@ -14,10 +14,16 @@ load_dotenv()
 
 print('Initializing Models')
 
+# Misc vars
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+NUM_CLASSES = 2
+MODES = ["old", "young"]
+
 # Custom model
 CUSTOM_MODEL_PATH = os.getenv("MODEL_PATH")
 custom_model = CustomAgeNetwork()
 custom_model.load_state_dict(torch.load(CUSTOM_MODEL_PATH))
+custom_model.to(DEVICE)
 
 data_transforms = transforms.Compose([
     transforms.Resize((82, 100)),
@@ -25,15 +31,12 @@ data_transforms = transforms.Compose([
 ])
 
 # Top_K is evaluated on *test* set
-TEST_DIR = './test'
+TEST_DIR = os.getenv("TEST_DIR")
 test_data = datasets.ImageFolder(TEST_DIR, transform=data_transforms)
 test_loader = DataLoader(test_data, batch_size=1)
-NUM_CLASSES = 2
-MODES = ["old", "young"]
 
 # CLIP
 EMBEDDING_DIM = 512
-DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 clip_model, clip_preprocess = clip.load("ViT-B/32", device=DEVICE)
 
 for mode in MODES:
@@ -51,13 +54,16 @@ for mode in MODES:
         clip_model.eval()
         for i, (image, label) in enumerate(test_loader):
 
+            image.to(DEVICE)
+            label.to(DEVICE)
+
             # Make sure image belongs to current class
             # being considered (young/old). Skip for now if not
-            path = test_loader.dataset.samples[i][0] # ex: ./val/old/female/no_smile/000997.jpg
-            img_class = path.split('/')[2]
+            path = test_loader.dataset.samples[i][0] # ex: test/old/female/no_smile/000997.jpg
+            img_class = path.split('/')[-4]
             if not mode == img_class:
                 continue
-
+            
             # Calculate correctness/confidence of custom model
             model_output = custom_model(image)
             confidence, predicted = torch.max(model_output.data, 1)
