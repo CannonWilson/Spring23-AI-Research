@@ -9,6 +9,7 @@ included in the training/val sets.
 """
 
 import os
+import sys
 from dotenv import load_dotenv
 import shutil
 from itertools import islice
@@ -31,6 +32,13 @@ assert os.path.exists(CSV_FILE), \
 
 # Create the train/val/test directories
 TRAIN_DIR, VAL_DIR, TEST_DIR = os.getenv("TRAIN_DIR"), os.getenv("VAL_DIR"), os.getenv("TEST_DIR")
+
+response = input("The scipt will delete any "+\
+                 "existing train/val/test directory. "+\
+                 "Would you like to continue? yes/no: ")
+if response != "yes":
+    print("Did not type 'yes'. Exiting.")
+    sys.exit()
 
 # Remove train/val/test directories if they already exist
 for data_dir in [TRAIN_DIR, VAL_DIR, TEST_DIR]:
