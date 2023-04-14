@@ -6,6 +6,8 @@ from itertools import islice
 from pathlib import Path
 import pandas as pd
 
+load_dotenv()
+
 SHOULD_COPY = True # Should the img files be copied or just moved?
 
 CELEB_DIR = os.getenv("CELEBA_DIR")
