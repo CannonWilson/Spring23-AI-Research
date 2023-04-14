@@ -126,17 +126,28 @@ print("VAL COUNTS: ", val_counts)
 # Go through the eval partitions
 # file and move the file into the
 # test folder if possible
+train_path = Path(TRAIN_DIR)
+val_path = Path(VAL_DIR)
+train_paths = [i.path for i in islice(os.scandir(train_path), None)]
+val_paths = [i.path for i in islice(os.scandir(val_path), None)]
+
+
 with open(PARTITION_FILE, encoding='utf-8') as f:
     for line in f:
         f_name, partition = line.split()
         f_path = os.path.join(CELEB_DIR, f_name)
         if partition == "2":
-            if f_path in celeb_paths:
+            if f_path in celeb_paths and \
+                    f_path not in train_paths and \
+                    f_path not in val_paths:
                 view = celeba_df[celeba_df['filename'] == f_name]
                 age = "young" if view['Young'].item() == 1 else "old" #pylint: disable=invalid-name
                 sex = "male" if view['Male'].item() == 1 else "female" #pylint: disable=invalid-name
                 smile = "smile" if view['Smiling'].item() == 1 else "no_smile" #pylint: disable=invalid-name
                 destination = os.path.join(TEST_DIR, age, sex, smile)
-                shutil.move(f_path, destination)
+                if SHOULD_COPY:
+                    shutil.copy(f_path, destination)
+                else: # if not copying, just move file
+                    shutil.move(f_path, destination)
 
 print("Finished making test set.")
