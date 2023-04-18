@@ -2,6 +2,7 @@ import os
 from dotenv import load_dotenv
 import torch
 from torch.utils.data import DataLoader
+import torch.nn as nn
 import torchvision
 from torchvision import datasets, transforms
 from age_model import CustomAgeNetwork
@@ -9,14 +10,22 @@ from age_model import CustomAgeNetwork
 load_dotenv()
 
 USE_RESNET = True
+BATCH_SIZE = 512
+# assert torch.cuda.is_available(), "GPU is not available!"
+# print(torch.cuda.device_count())
+# DEVICE = f'cuda:{torch.cuda.device_count()-1}'
+DEVICE = 'cpu'
 
 # Load model
 MODEL_PATH = os.getenv("MODEL_PATH")
 if USE_RESNET:
+    OUT_FEATS = 1
     model = torchvision.models.resnet18()
+    model.fc = nn.Linear(in_features=512, out_features=OUT_FEATS, bias=True)
 else: 
     model = CustomAgeNetwork()
 model.load_state_dict(torch.load(MODEL_PATH))
+model.to(DEVICE)
 
 img_size = (os.getenv("IMG_WIDTH"), os.getenv("IMG_HEIGHT"))
 assert img_size == (75, 75), "Images must be 75x75"
@@ -31,7 +40,7 @@ def loader(dirn):
     ImageFolder and torch DataLoader.
     Assumes batch_size=1.
     """
-    return DataLoader(datasets.ImageFolder(dirn, transform=data_transforms), batch_size = 1)
+    return DataLoader(datasets.ImageFolder(dirn, transform=data_transforms), batch_size = BATCH_SIZE)
 
 TRAIN_DIR, VAL_DIR, TEST_DIR = os.getenv("TRAIN_DIR"), os.getenv("VAL_DIR"), os.getenv("TEST_DIR")
 train_loader, val_loader, test_loader = loader(TRAIN_DIR), loader(VAL_DIR), loader(TEST_DIR)
@@ -110,6 +119,6 @@ def test_acc(data_loader, mode):
             round(100 * val['correct'] / val['total']) / 100)
 
 if __name__ == "__main__":
-    # test_acc(train_loader, "train")
+    test_acc(train_loader, "train")
     # test_acc(val_loader, "val")
     test_acc(test_loader, "test")
