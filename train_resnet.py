@@ -14,9 +14,8 @@ from mean_train import MEANS, STDEVS
 load_dotenv()
 
 assert torch.cuda.is_available(), "GPU is not available!"
-print([torch.cuda.device(i) for i in range(torch.cuda.device_count())])
-sys.exit()
-DEVICE = 'cuda'
+print(torch.cuda.device_count())
+DEVICE = f'cuda:{torch.cuda.device_count()-1}'
 
 # From paper
 BATCH_SIZE = 512
