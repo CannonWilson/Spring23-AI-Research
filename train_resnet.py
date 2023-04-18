@@ -48,6 +48,7 @@ model = torchvision.models.resnet18()
 # overwrite the last layer of resnet to use
 # one output class (later, use bce)
 model.fc = nn.Linear(in_features=512, out_features=OUT_FEATS, bias=True)
+model.cuda()
 model.train()
 
 optimizer = SGD(model.parameters(),
@@ -70,8 +71,6 @@ bce_loss_unreduced = nn.BCEWithLogitsLoss(reduction='none')
 
 for epoch in range(EPOCHS):
     for idx, (images, labels) in enumerate(train_loader):
-        images.to(DEVICE)
-        labels.to(DEVICE)
         optimizer.zero_grad(set_to_none=True)
         with autocast():
             logits = model(images).squeeze()
