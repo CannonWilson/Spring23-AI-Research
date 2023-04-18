@@ -77,7 +77,7 @@ for epoch in range(EPOCHS):
         images = images.to(DEVICE)
         with autocast():
             logits = model(images).squeeze()
-            temp_loss = bce_loss_unreduced(logits, labels.float())
+            temp_loss = bce_loss_unreduced(logits, labels.float().to(DEVICE))
             loss = temp_loss.mean()
         scaler.scale(loss).backward()
         scaler.step(optimizer)
