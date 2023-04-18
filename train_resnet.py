@@ -12,6 +12,9 @@ from mean_train import MEANS, STDEVS
 
 load_dotenv()
 
+assert torch.cuda.is_available(), "GPU is not available!"
+DEVICE = 'cuda'
+
 # From paper
 BATCH_SIZE = 512
 EPOCHS = 30
@@ -67,6 +70,8 @@ bce_loss_unreduced = nn.BCEWithLogitsLoss(reduction='none')
 
 for epoch in range(EPOCHS):
     for idx, (images, labels) in enumerate(train_loader):
+        images.to(DEVICE)
+        labels.to(DEVICE)
         optimizer.zero_grad(set_to_none=True)
         with autocast():
             logits = model(images).squeeze()
