@@ -72,6 +72,8 @@ bce_loss_unreduced = nn.BCEWithLogitsLoss(reduction='none')
 for epoch in range(EPOCHS):
     for idx, (images, labels) in enumerate(train_loader):
         optimizer.zero_grad(set_to_none=True)
+        images.to(DEVICE)
+        labels.to(DEVICE)
         with autocast():
             logits = model(images).squeeze()
             temp_loss = bce_loss_unreduced(logits, labels.float())
