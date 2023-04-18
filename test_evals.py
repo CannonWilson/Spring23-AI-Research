@@ -2,14 +2,20 @@ import os
 from dotenv import load_dotenv
 import torch
 from torch.utils.data import DataLoader
+import torchvision
 from torchvision import datasets, transforms
 from age_model import CustomAgeNetwork
 
 load_dotenv()
 
-# Custom model
+USE_RESNET = True
+
+# Load model
 MODEL_PATH = os.getenv("MODEL_PATH")
-model = CustomAgeNetwork()
+if USE_RESNET:
+    model = torchvision.models.resnet18()
+else: 
+    model = CustomAgeNetwork()
 model.load_state_dict(torch.load(MODEL_PATH))
 
 img_size = (os.getenv("IMG_WIDTH"), os.getenv("IMG_HEIGHT"))
