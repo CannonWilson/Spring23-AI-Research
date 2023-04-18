@@ -11,10 +11,10 @@ load_dotenv()
 
 USE_RESNET = True
 BATCH_SIZE = 512
-# assert torch.cuda.is_available(), "GPU is not available!"
-# print(torch.cuda.device_count())
-# DEVICE = f'cuda:{torch.cuda.device_count()-1}'
-DEVICE = 'cpu'
+assert torch.cuda.is_available(), "GPU is not available!"
+print(torch.cuda.device_count())
+DEVICE = f'cuda:{torch.cuda.device_count()-1}'
+
 
 # Load model
 MODEL_PATH = os.getenv("MODEL_PATH")
