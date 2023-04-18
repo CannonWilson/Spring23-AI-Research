@@ -55,5 +55,7 @@ Create and fill the train/val/test directories
 python3 make_dataset.py
 ```
 
-You should be good to go! Now, try running 
+Before continuing, make sure the environment
+variables stored in .env match the actual 
+paths of your device. Then, try running 
 the other files such as `test_evals.py`.
