@@ -21,6 +21,7 @@ WEIGHT_DECAY = 5e-4
 PEAK_EPOCH = 2
 
 # Other vars
+DESTINATION_PATH = 'resnet.pth'
 LR_INIT= 0.2 # This is just a guess based on how initial LR for CIFAR was 0.5
 OUT_FEATS = 1
 img_size = (int(os.getenv("IMG_WIDTH")), int(os.getenv("IMG_HEIGHT")))
@@ -75,4 +76,5 @@ for epoch in range(EPOCHS):
         scaler.step(optimizer)
         scaler.update()
         scheduler.step()
-    print('Finished epoch: ', epoch+1)
+    print('Finished epoch: ', epoch+1, '. Saving model.')
+    torch.save(model.state_dict(), DESTINATION_PATH)
