@@ -1,4 +1,5 @@
 import os
+import sys
 import numpy as np
 from dotenv import load_dotenv
 import torch
@@ -13,6 +14,8 @@ from mean_train import MEANS, STDEVS
 load_dotenv()
 
 assert torch.cuda.is_available(), "GPU is not available!"
+print([torch.cuda.device(i) for i in range(torch.cuda.device_count())])
+sys.exit()
 DEVICE = 'cuda'
 
 # From paper
@@ -48,7 +51,7 @@ model = torchvision.models.resnet18()
 # overwrite the last layer of resnet to use
 # one output class (later, use bce)
 model.fc = nn.Linear(in_features=512, out_features=OUT_FEATS, bias=True)
-model.cuda()
+model.to(DEVICE)
 model.train()
 
 optimizer = SGD(model.parameters(),
