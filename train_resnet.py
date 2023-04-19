@@ -41,7 +41,7 @@ def loader(dirn):
     Create data using torchvision 
     ImageFolder and torch DataLoader.
     """
-    return DataLoader(datasets.ImageFolder(dirn, transform=data_transforms), batch_size=BATCH_SIZE)
+    return DataLoader(datasets.ImageFolder(dirn, transform=data_transforms), batch_size=BATCH_SIZE, shuffle=True)
 
 TRAIN_DIR, VAL_DIR, TEST_DIR = os.getenv("TRAIN_DIR"), os.getenv("VAL_DIR"), os.getenv("TEST_DIR")
 train_loader, val_loader, test_loader = loader(TRAIN_DIR), loader(VAL_DIR), loader(TEST_DIR)
@@ -71,9 +71,12 @@ scheduler = lr_scheduler.LambdaLR(optimizer, get_lr)
 scaler = GradScaler()
 # bce_loss_unreduced = nn.BCEWithLogitsLoss(reduction='none')
 bce_loss = nn.BCEWithLogitsLoss()
+sigmoid = nn.Sigmoid()
 
 for epoch in range(EPOCHS):
     epoch_loss = 0
+    epoch_correct = 0
+    epoch_total = 0
     for idx, (images, labels) in enumerate(train_loader):
         optimizer.zero_grad(set_to_none=True)
         images = images.to(DEVICE)
@@ -83,12 +86,18 @@ for epoch in range(EPOCHS):
             # temp_loss = bce_loss_unreduced(logits, labels.float().to(DEVICE))
             # loss = temp_loss.mean()
             loss = bce_loss(logits, labels.float())
-            # print('loss: ', loss)
             epoch_loss += loss
         scaler.scale(loss).backward()
         scaler.step(optimizer)
         scaler.update()
         scheduler.step()
-        # loss.backward() - appears to work fine
-    print(f'Finished epoch {epoch + 1} with loss {epoch_loss}. Saving model.')
+
+        pred = sigmoid(logits) > 0.5
+        correct = pred == labels
+        epoch_correct += correct.sum()
+        epoch_total += labels.size()[0]
+    acc = epoch_correct / epoch_total
+    print('#### epoch: ', epoch+1,' #### ')
+    print('loss: ', loss)
+    print('acc: ', acc)
     torch.save(model.state_dict(), DESTINATION_PATH)
