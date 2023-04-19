@@ -28,7 +28,7 @@ PEAK_EPOCH = 2
 # Other vars
 DESTINATION_PATH = 'resnet.pth'
 LR_INIT= 0.2 # This is just a guess based on how initial LR for CIFAR was 0.5
-OUT_FEATS = 1
+OUT_FEATS = 1 # Using BCE
 img_size = (int(os.getenv("IMG_WIDTH")), int(os.getenv("IMG_HEIGHT")))
 assert img_size == (75, 75), "Images must be 75x75"
 data_transforms = transforms.Compose([
@@ -69,22 +69,26 @@ def get_lr(epo):
     return lr_schedule[epo]
 scheduler = lr_scheduler.LambdaLR(optimizer, get_lr)
 scaler = GradScaler()
-bce_loss_unreduced = nn.BCEWithLogitsLoss(reduction='none')
+# bce_loss_unreduced = nn.BCEWithLogitsLoss(reduction='none')
+bce_loss = nn.BCEWithLogitsLoss()
 
 for epoch in range(EPOCHS):
     epoch_loss = 0
     for idx, (images, labels) in enumerate(train_loader):
         optimizer.zero_grad(set_to_none=True)
         images = images.to(DEVICE)
+        labels = labels.to(DEVICE)
         with autocast():
             logits = model(images).squeeze()
-            print('logits: ', logits)
-            temp_loss = bce_loss_unreduced(logits, labels.float().to(DEVICE))
-            loss = temp_loss.mean()
+            # temp_loss = bce_loss_unreduced(logits, labels.float().to(DEVICE))
+            # loss = temp_loss.mean()
+            loss = bce_loss(logits, labels.float())
+            # print('loss: ', loss)
             epoch_loss += loss
         scaler.scale(loss).backward()
         scaler.step(optimizer)
         scaler.update()
         scheduler.step()
+        # loss.backward() - appears to work fine
     print(f'Finished epoch {epoch + 1} with loss {epoch_loss}. Saving model.')
     torch.save(model.state_dict(), DESTINATION_PATH)
