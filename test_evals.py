@@ -6,13 +6,13 @@ import torch.nn as nn
 import torchvision
 from torchvision import datasets, transforms
 from age_model import CustomAgeNetwork
+from mean_train import MEANS, STDEVS
 
 load_dotenv()
 
 USE_RESNET = True
 BATCH_SIZE = 512
 assert torch.cuda.is_available(), "GPU is not available!"
-print(torch.cuda.device_count())
 DEVICE = f'cuda:{torch.cuda.device_count()-1}'
 
 
@@ -27,11 +27,12 @@ else:
 model.load_state_dict(torch.load(MODEL_PATH))
 model.to(DEVICE)
 
-img_size = (os.getenv("IMG_WIDTH"), os.getenv("IMG_HEIGHT"))
+img_size = (int(os.getenv("IMG_WIDTH")), int(os.getenv("IMG_HEIGHT")))
 assert img_size == (75, 75), "Images must be 75x75"
 data_transforms = transforms.Compose([
     transforms.Resize(img_size),
-    transforms.ToTensor()
+    transforms.ToTensor(),
+    transforms.Normalize(mean=list(MEANS.values()), std=list(STDEVS.values()))
 ])
 
 def loader(dirn):
@@ -92,13 +93,21 @@ def test_acc(data_loader, mode):
 
     total_correct = 0
     total_num = 0
+    relu = nn.ReLU()
 
     with torch.no_grad():
         model.eval()
         for i, (images, labels) in enumerate(data_loader):
-
+            images = images.to(DEVICE)
+            labels = labels.to(DEVICE)
             # Custom model
-            outputs = model(images)
+            logits = model(images).squeeze()
+            print('logits: ', logits)
+            pred = relu(logits)
+            print(pred.size())
+            print(pred.max().item())
+            print(pred.min().item())
+            raise
             _, predicted = torch.max(outputs.data, 1)
             pred = predicted.item()
             actual = labels.item()
@@ -119,6 +128,6 @@ def test_acc(data_loader, mode):
             round(100 * val['correct'] / val['total']) / 100)
 
 if __name__ == "__main__":
-    test_acc(train_loader, "train")
+    # test_acc(train_loader, "train")
     # test_acc(val_loader, "val")
     test_acc(test_loader, "test")

@@ -72,16 +72,19 @@ scaler = GradScaler()
 bce_loss_unreduced = nn.BCEWithLogitsLoss(reduction='none')
 
 for epoch in range(EPOCHS):
+    epoch_loss = 0
     for idx, (images, labels) in enumerate(train_loader):
         optimizer.zero_grad(set_to_none=True)
         images = images.to(DEVICE)
         with autocast():
             logits = model(images).squeeze()
+            print('logits: ', logits)
             temp_loss = bce_loss_unreduced(logits, labels.float().to(DEVICE))
             loss = temp_loss.mean()
+            epoch_loss += loss
         scaler.scale(loss).backward()
         scaler.step(optimizer)
         scaler.update()
         scheduler.step()
-    print('Finished epoch: ', epoch+1, '. Saving model.')
+    print(f'Finished epoch {epoch + 1} with loss {epoch_loss}. Saving model.')
     torch.save(model.state_dict(), DESTINATION_PATH)
