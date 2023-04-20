@@ -1,6 +1,8 @@
 import os
 from dotenv import load_dotenv
 from torch.utils.data import DataLoader
+import torch.nn as nn
+import torchvision
 from torchvision import datasets, transforms
 import torch
 import clip
@@ -8,7 +10,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from PIL import Image
 from sklearn import svm
-from age_model import CustomAgeNetwork
 
 load_dotenv()
 
@@ -16,13 +17,14 @@ print('Initializing Models')
 
 # Misc vars
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-NUM_CLASSES = 2
 MODES = ["old", "young"]
+sigmoid = nn.Sigmoid()
 
 # Custom model
 CUSTOM_MODEL_PATH = os.getenv("MODEL_PATH")
-custom_model = CustomAgeNetwork()
-custom_model.load_state_dict(torch.load(CUSTOM_MODEL_PATH))
+custom_model = torchvision.models.resnet18()
+custom_model.fc = nn.Linear(in_features=512, out_features=1, bias=True)
+custom_model.load_state_dict(torch.load(CUSTOM_MODEL_PATH, map_location=DEVICE))
 custom_model.to(DEVICE)
 
 data_transforms = transforms.Compose([
@@ -66,15 +68,19 @@ for mode in MODES:
             
             # Calculate correctness/confidence of custom model
             model_output = custom_model(image)
-            confidence, predicted = torch.max(model_output.data, 1)
-            conf = confidence.item()
+            conf = sigmoid(model_output).item()
+            pred = 0 if conf > 0.5 else 1
+            # print('model out: ', model_output)
+            # print('pred: ', pred)
             confidences.append(conf) # [cur_idx] = conf
-            pred = predicted.item()
             actual = label.item()
             if pred == actual:
+                # print('correct')
                 correctness.append(1)
             else:
+                # print('incorrect')
                 correctness.append(-1)
+            # raise
 
             # Record sex/smiling of current img
             sex = path.split('/')[-3]
