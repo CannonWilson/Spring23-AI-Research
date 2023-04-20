@@ -93,25 +93,26 @@ def test_acc(data_loader, mode):
 
     total_correct = 0
     total_num = 0
-    relu = nn.ReLU()
+    sigmoid = nn.Sigmoid()
 
     with torch.no_grad():
         model.eval()
+        epoch_correct = 0
+        epoch_total = 0
         for i, (images, labels) in enumerate(data_loader):
             images = images.to(DEVICE)
             labels = labels.to(DEVICE)
             # Custom model
             logits = model(images).squeeze()
-            print('logits: ', logits)
-            pred = relu(logits)
-            print(pred.size())
-            print(pred.max().item())
-            print(pred.min().item())
-            raise
-            _, predicted = torch.max(outputs.data, 1)
-            pred = predicted.item()
-            actual = labels.item()
+            pred = sigmoid(logits) > 0.5
+            correct = pred == labels
+            epoch_correct += correct.sum()
+            epoch_total += labels.size()[0]
+            
+            print('DATALOADER SAMPLES', data_loader.dataset.samples[i])
             f_path = data_loader.dataset.samples[i][0]
+            print('f_path: ', f_path)
+            raise
 
             # Use file path to get attributes
             full_key = "_".join(f_path.split("/")[-4:-1]) # ex: old_female_no_smile

@@ -1,5 +1,4 @@
 import os
-import sys
 import numpy as np
 from dotenv import load_dotenv
 import torch
@@ -69,8 +68,7 @@ def get_lr(epo):
     return lr_schedule[epo]
 scheduler = lr_scheduler.LambdaLR(optimizer, get_lr)
 scaler = GradScaler()
-# bce_loss_unreduced = nn.BCEWithLogitsLoss(reduction='none')
-bce_loss = nn.BCEWithLogitsLoss()
+bce_loss = nn.BCEWithLogitsLoss() # nn.BCEWithLogitsLoss(reduction='none')
 sigmoid = nn.Sigmoid()
 
 for epoch in range(EPOCHS):
@@ -83,8 +81,6 @@ for epoch in range(EPOCHS):
         labels = labels.to(DEVICE)
         with autocast():
             logits = model(images).squeeze()
-            # temp_loss = bce_loss_unreduced(logits, labels.float().to(DEVICE))
-            # loss = temp_loss.mean()
             loss = bce_loss(logits, labels.float())
             epoch_loss += loss
         scaler.scale(loss).backward()
