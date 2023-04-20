@@ -10,6 +10,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from PIL import Image
 from sklearn import svm
+from mean_train import MEANS, STDEVS
 
 load_dotenv()
 
@@ -27,9 +28,12 @@ custom_model.fc = nn.Linear(in_features=512, out_features=1, bias=True)
 custom_model.load_state_dict(torch.load(CUSTOM_MODEL_PATH, map_location=DEVICE))
 custom_model.to(DEVICE)
 
+img_size = (int(os.getenv("IMG_WIDTH")), int(os.getenv("IMG_HEIGHT")))
+assert img_size == (75, 75), "Images must be 75x75"
 data_transforms = transforms.Compose([
-    transforms.Resize((82, 100)),
-    transforms.ToTensor()
+    transforms.Resize(img_size),
+    transforms.ToTensor(),
+    transforms.Normalize(mean=list(MEANS.values()), std=list(STDEVS.values()))
 ])
 
 # Top_K is evaluated on *test* set
@@ -68,19 +72,15 @@ for mode in MODES:
             
             # Calculate correctness/confidence of custom model
             model_output = custom_model(image)
-            conf = sigmoid(model_output).item()
-            pred = 0 if conf > 0.5 else 1
-            # print('model out: ', model_output)
-            # print('pred: ', pred)
-            confidences.append(conf) # [cur_idx] = conf
+            sig_out = sigmoid(model_output).item()
+            pred = 1 if sig_out > 0.5 else 0
+            conf = abs(0.5 - sig_out)
+            confidences.append(conf)
             actual = label.item()
             if pred == actual:
-                # print('correct')
                 correctness.append(1)
             else:
-                # print('incorrect')
                 correctness.append(-1)
-            # raise
 
             # Record sex/smiling of current img
             sex = path.split('/')[-3]
