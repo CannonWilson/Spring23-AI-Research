@@ -69,7 +69,7 @@ for mode in MODES:
             img_class = path.split('/')[-4]
             if not mode == img_class:
                 continue
-            
+
             # Calculate correctness/confidence of custom model
             model_output = custom_model(image)
             sig_out = sigmoid(model_output).item()
@@ -139,4 +139,4 @@ for mode in MODES:
     plt.xlabel("Top K Flagged")
     plt.legend(loc="upper right")
     plt.title(f"{minority_sex} Flagged for Class {mode}")
-    plt.show()
+    plt.savefig(f'{mode}_orig_results.png')
