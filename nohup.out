@@ -1,0 +1,4 @@
+The scipt will delete any existing train/val/test directory. Would you like to continue? yes/no: Traceback (most recent call last):
+  File "/afs/cs.wisc.edu/u/k/g/kgwilson/private/Spring23-Research/make_orig_dataset.py", line 36, in <module>
+    response = input("The scipt will delete any "+\
+OSError: [Errno 9] Bad file descriptor

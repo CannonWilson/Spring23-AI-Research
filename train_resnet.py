@@ -25,7 +25,8 @@ WEIGHT_DECAY = 5e-4
 PEAK_EPOCH = 2
 
 # Other vars
-DESTINATION_PATH = 'resnet.pth'
+DESTINATION_PATH = os.getenv("MODEL_PATH")
+print(f'Beginning training. Saving model to {DESTINATION_PATH}')
 LR_INIT= 0.2 # This is just a guess based on how initial LR for CIFAR was 0.5
 OUT_FEATS = 1 # Using BCE
 img_size = (int(os.getenv("IMG_WIDTH")), int(os.getenv("IMG_HEIGHT")))

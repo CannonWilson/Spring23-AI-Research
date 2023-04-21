@@ -1,8 +1,8 @@
 # ignore dataset
 img_align* 
-train
-val
-test
+train*
+val*
+test*
 
 idea/
 

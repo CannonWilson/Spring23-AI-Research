@@ -109,19 +109,16 @@ def test_acc(data_loader, mode):
             epoch_correct += correct.sum()
             epoch_total += labels.size()[0]
             
-            print('DATALOADER SAMPLES', data_loader.dataset.samples[i])
-            f_path = data_loader.dataset.samples[i][0]
-            print('f_path: ', f_path)
-            raise
-
-            # Use file path to get attributes
-            full_key = "_".join(f_path.split("/")[-4:-1]) # ex: old_female_no_smile
-            if pred == actual:
-                total_correct += 1
-                results[full_key]['correct'] = results[full_key]['correct'] + 1
-            results[full_key]['total'] = results[full_key]['total'] + 1
-            total_num += 1
-
+            start_idx = i * BATCH_SIZE
+            end_idx = start_idx + BATCH_SIZE
+            for f_idx, (f_path, class_num) in enumerate(data_loader.dataset.samples[start_idx:end_idx]):
+                # Use file path to get attributes
+                full_key = "_".join(f_path.split("/")[-4:-1]) # ex: old_female_no_smile
+                if correct[f_idx] == True:
+                    total_correct += 1
+                    results[full_key]['correct'] = results[full_key]['correct'] + 1
+                results[full_key]['total'] = results[full_key]['total'] + 1
+                total_num += 1
 
     print(f'TOTAL {mode.upper()} ACCURACY: ', round(100 * total_correct/ total_num) / 100)
     for key, val in results.items():
@@ -129,6 +126,6 @@ def test_acc(data_loader, mode):
             round(100 * val['correct'] / val['total']) / 100)
 
 if __name__ == "__main__":
-    # test_acc(train_loader, "train")
-    # test_acc(val_loader, "val")
+    test_acc(train_loader, "train")
+    test_acc(val_loader, "val")
     test_acc(test_loader, "test")
