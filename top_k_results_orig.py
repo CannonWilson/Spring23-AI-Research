@@ -60,8 +60,8 @@ for mode in MODES:
         clip_model.eval()
         for i, (image, label) in enumerate(test_loader):
 
-            image.to(DEVICE)
-            label.to(DEVICE)
+            image = image.to(DEVICE)
+            label = label.to(DEVICE)
 
             # Make sure image belongs to current class
             # being considered (young/old). Skip for now if not
@@ -97,10 +97,12 @@ for mode in MODES:
     # Fit the SVM on all of the embeddings
     IMGS_THIS_CLASS = len(correctness)
     svm_classifier = svm.SVC(kernel="linear")
-    svm_classifier.fit(torch.cat(img_feature_stack), torch.tensor(correctness, dtype=torch.int8))
+    np_feat_stack = torch.cat(img_feature_stack).cpu().numpy()
+    np_corr = np.array(correctness, dtype=np.int8)
+    svm_classifier.fit(np_feat_stack, np_corr)
     for idx in range(IMGS_THIS_CLASS):
         score = np.dot(svm_classifier.coef_[0], \
-            img_feature_stack[idx].numpy().transpose()) + \
+            np_feat_stack[idx].transpose()) + \
                 svm_classifier.intercept_
         ds_values.append(score[0])
 
