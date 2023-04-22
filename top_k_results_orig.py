@@ -65,8 +65,8 @@ for mode in MODES:
 
             # Make sure image belongs to current class
             # being considered (young/old). Skip for now if not
-            path = test_loader.dataset.samples[i][0] # ex: test/old/female/no_smile/000997.jpg
-            img_class = path.split('/')[-4]
+            path = test_loader.dataset.samples[i][0] # ex: test_orig/old/female/183130.jpg
+            img_class = path.split('/')[-3]
             if not mode == img_class:
                 continue
 
