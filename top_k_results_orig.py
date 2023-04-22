@@ -142,3 +142,4 @@ for mode in MODES:
     plt.legend(loc="upper right")
     plt.title(f"{minority_sex} Flagged for Class {mode}")
     plt.savefig(f'{mode}_orig_results.png')
+
