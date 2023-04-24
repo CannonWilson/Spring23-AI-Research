@@ -83,7 +83,7 @@ for mode in MODES:
                 correctness.append(-1)
 
             # Record sex/smiling of current img
-            sex = path.split('/')[-3]
+            sex = path.split('/')[-2]
             sexes.append(1 if sex == "male" else 0)
 
             # Generate CLIP embedding
@@ -132,16 +132,6 @@ for mode in MODES:
         sex_y_ds = ds_sorted_frac_male
         sex_baseline = conf_num_males / IMGS_THIS_CLASS
 
-    print('conf_num_males: ', conf_num_males)
-    print('ds_num_males: ', ds_num_males)
-    print(len(conf_sorted_idxs))
-    print(len(ds_sorted_idxs))
-    print(len(conf_sorted_sexes))
-    print(len(ds_sorted_sexes))
-    print(len(conf_sorted_frac_male))
-    print(len(ds_sorted_frac_male))
-    raise
-
     # Plot sex results for class
     plt.plot(range(IMGS_THIS_CLASS), sex_y_conf, color='g', label="Confidence")
     plt.plot(range(IMGS_THIS_CLASS), sex_y_ds, color='b', label="Decision Score")
@@ -151,4 +141,4 @@ for mode in MODES:
     plt.legend(loc="upper right")
     plt.title(f"{minority_sex} Flagged for Class {mode}")
     plt.savefig(f'{mode}_orig_results.png')
-
+    plt.show()

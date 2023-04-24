@@ -126,6 +126,6 @@ def test_acc(data_loader, mode):
             round(100 * val['correct'] / val['total']) / 100)
 
 if __name__ == "__main__":
-    test_acc(train_loader, "train")
+    # test_acc(train_loader, "train")
     test_acc(val_loader, "val")
-    test_acc(test_loader, "test")
+    # test_acc(test_loader, "test")
