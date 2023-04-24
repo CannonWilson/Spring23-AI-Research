@@ -10,6 +10,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from PIL import Image
 from sklearn import svm
+from sklearn.svm import LinearSVC
 from mean_train import MEANS, STDEVS
 
 load_dotenv()
@@ -96,14 +97,16 @@ for mode in MODES:
     print('Beginning to fit SVM classifiers')
     # Fit the SVM on all of the embeddings
     IMGS_THIS_CLASS = len(correctness)
-    svm_classifier = svm.SVC(kernel="linear")
+    # svm_classifier = svm.SVC(kernel="linear")
+    svm_classifier = LinearSVC()
     np_feat_stack = torch.cat(img_feature_stack).cpu().numpy()
     np_corr = np.array(correctness, dtype=np.int8)
     svm_classifier.fit(np_feat_stack, np_corr)
     for idx in range(IMGS_THIS_CLASS):
-        score = np.dot(svm_classifier.coef_[0], \
-            np_feat_stack[idx].transpose()) + \
-                svm_classifier.intercept_
+        # score = np.dot(svm_classifier.coef_[0], \
+        #     np_feat_stack[idx].transpose()) + \
+        #         svm_classifier.intercept_
+        score = svm_classifier.decision_function(np_feat_stack[idx])
         ds_values.append(score[0])
 
     print('Fitted SVM, now plotting results.')
@@ -140,5 +143,5 @@ for mode in MODES:
     plt.xlabel("Top K Flagged")
     plt.legend(loc="upper right")
     plt.title(f"{minority_sex} Flagged for Class {mode}")
-    plt.savefig(f'{mode}_orig_results.png')
+    plt.savefig(f'new_{mode}_orig_results.png')
     plt.show()
