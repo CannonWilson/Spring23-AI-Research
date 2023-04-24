@@ -132,6 +132,15 @@ for mode in MODES:
         sex_y_ds = ds_sorted_frac_male
         sex_baseline = conf_num_males / IMGS_THIS_CLASS
 
+    print('conf_num_males: ', conf_num_males)
+    print('ds_num_males: ', ds_num_males)
+    print(len(conf_sorted_idxs))
+    print(len(ds_sorted_idxs))
+    print(len(conf_sorted_sexes))
+    print(len(ds_sorted_sexes))
+    print(len(conf_sorted_frac_male))
+    print(len(ds_sorted_frac_male))
+    raise
 
     # Plot sex results for class
     plt.plot(range(IMGS_THIS_CLASS), sex_y_conf, color='g', label="Confidence")
