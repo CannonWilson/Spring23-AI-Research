@@ -10,6 +10,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from PIL import Image
 from sklearn import svm
+from sklearn.preprocessing import StandardScaler
 from sklearn.svm import LinearSVC
 from mean_train import MEANS, STDEVS
 
@@ -101,13 +102,16 @@ for mode in MODES:
     svm_classifier = LinearSVC()
     np_feat_stack = torch.cat(img_feature_stack).cpu().numpy()
     np_corr = np.array(correctness, dtype=np.int8)
-    svm_classifier.fit(np_feat_stack, np_corr)
+    scaler = StandardScaler()
+    scaler.fit(np_feat_stack)
+    scaled_feat_stack = scaler.transform(np_feat_stack)
+    svm_classifier.fit(scaled_feat_stack, np_corr)
     # for idx in range(IMGS_THIS_CLASS):
         # score = np.dot(svm_classifier.coef_[0], \
         #     np_feat_stack[idx].transpose()) + \
         #         svm_classifier.intercept_
         # ds_values.append(score[0])
-    ds_values = svm_classifier.decision_function(np_feat_stack)
+    ds_values = svm_classifier.decision_function(scaled_feat_stack)
     
 
     print('Fitted SVM, now plotting results.')
