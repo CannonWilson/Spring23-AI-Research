@@ -102,12 +102,13 @@ for mode in MODES:
     np_feat_stack = torch.cat(img_feature_stack).cpu().numpy()
     np_corr = np.array(correctness, dtype=np.int8)
     svm_classifier.fit(np_feat_stack, np_corr)
-    for idx in range(IMGS_THIS_CLASS):
+    # for idx in range(IMGS_THIS_CLASS):
         # score = np.dot(svm_classifier.coef_[0], \
         #     np_feat_stack[idx].transpose()) + \
         #         svm_classifier.intercept_
-        score = svm_classifier.decision_function(np_feat_stack[idx])
-        ds_values.append(score[0])
+        # ds_values.append(score[0])
+    ds_values = svm_classifier.decision_function(np_feat_stack)
+    
 
     print('Fitted SVM, now plotting results.')
     conf_sorted_idxs =  np.argsort(confidences)
