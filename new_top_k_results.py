@@ -148,11 +148,11 @@ for mode, svm_c, scaler in zip(MODES, trained_svms, scalers):
             sig_out = sigmoid(model_output)
             conf = torch.abs(0.5-sig_out) # confidence represented by distance to 0.5
             confidences[cur_idx:cur_idx+b_size] = conf
-            cur_idx += b_size
             if CALC_SVM_ACC:
                 preds = torch.where(sig_out>0.5, 1, 0)
                 correct = torch.where(preds==labels, 1, -1)
                 test_correctness[cur_idx:cur_idx+b_size] = correct
+            cur_idx += b_size
     
     with torch.no_grad():
         print("Getting CLIP embeddings, attributes, and decision scores " +\
