@@ -164,7 +164,7 @@ for mode, svm_c, scaler in zip(MODES, trained_svms, scalers):
             if NUM_CORRS == 2:
                 smiles[i] = 0 if 'no_smile' in path else 1
         image_input = torch.tensor(np.stack(pil_images), device=DEVICE)
-        test_feat_stack = torch.empty(IMGS_THIS_CLASS)
+        test_feat_stack = torch.empty(IMGS_THIS_CLASS, EMBEDDING_DIM)
         num_test_batches = image_input.size()[0] // BATCH_SIZE
         cur_idx = 0
         for b_idx in range(num_test_batches):
