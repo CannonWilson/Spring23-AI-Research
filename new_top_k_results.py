@@ -131,7 +131,7 @@ for mode, svm_c, scaler in zip(MODES, trained_svms, scalers):
     if CALC_SVM_ACC:
         test_correctness = torch.empty(IMGS_THIS_CLASS)
     ds_values = None
-    pil_images, sexes = np.empty(IMGS_THIS_CLASS), np.empty(IMGS_THIS_CLASS)
+    pil_images, sexes = [], np.empty(IMGS_THIS_CLASS)
     smiles = np.empty(IMGS_THIS_CLASS) if NUM_CORRS == 2 else None
 
     with torch.no_grad():
@@ -158,7 +158,7 @@ for mode, svm_c, scaler in zip(MODES, trained_svms, scalers):
         print("Getting CLIP embeddings, attributes, and decision scores " +\
                 "for test images in class ", mode)
         for i, path in enumerate(test_paths): 
-            pil_images[i]=clip_preprocess(Image.open(path))
+            pil_images.append(clip_preprocess(Image.open(path)))
             # Also record sex/smiling of this test image
             sexes[i] = 0 if 'female' in path else 1
             if NUM_CORRS == 2:
