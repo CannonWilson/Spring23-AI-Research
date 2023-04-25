@@ -158,7 +158,7 @@ for mode, svm_c, scaler in zip(MODES, trained_svms, scalers):
         print("Getting CLIP embeddings, attributes, and decision scores " +\
                 "for test images in class ", mode)
         for i, path in enumerate(test_paths): 
-            pil_images.append(clip_preprocess(Image.open(path)))
+            pil_images[i]=clip_preprocess(Image.open(path))
             # Also record sex/smiling of this test image
             sexes[i] = 0 if 'female' in path else 1
             if NUM_CORRS == 2:
