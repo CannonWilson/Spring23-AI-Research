@@ -164,7 +164,16 @@ for mode, svm_c, scaler in zip(MODES, trained_svms, scalers):
             if NUM_CORRS == 2:
                 smiles[i] = 0 if 'no_smile' in path else 1
         image_input = torch.tensor(np.stack(pil_images), device=DEVICE)
-        test_feat_stack = clip_model.encode_image(image_input).float()
+        test_feat_stack = torch.empty(IMGS_THIS_CLASS)
+        num_test_batches = image_input.size()[0] // BATCH_SIZE
+        cur_idx = 0
+        for b_idx in range(num_test_batches):
+            end_idx = cur_idx + BATCH_SIZE
+            if end_idx >= image_input.size()[0]:
+                end_idx = image_input.size()[0]
+            test_feat_stack[cur_idx:end_idx] = \
+                clip_model.encode_image(image_input[cur_idx:end_idx]).float()
+            cur_idx += BATCH_SIZE
         print(f"Test feature stack size: {test_feat_stack.size()}")
         scaled_test_feats = scaler.transform(test_feat_stack)
         ds_values = svm_c.decision_function(scaled_test_feats)
