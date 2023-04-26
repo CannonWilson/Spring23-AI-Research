@@ -12,9 +12,11 @@ load_dotenv()
 
 USE_RESNET = True
 BATCH_SIZE = 512
-assert torch.cuda.is_available(), "GPU is not available!"
-DEVICE = f'cuda:{torch.cuda.device_count()-1}'
-
+DEVICE = f'cuda' if torch.cuda.is_available() else 'cpu'
+if torch.cuda.is_available():
+    map_location=lambda storage, loc: storage.cuda()
+else:
+    map_location='cpu'
 
 # Load model
 MODEL_PATH = os.getenv("MODEL_PATH")
@@ -22,9 +24,9 @@ if USE_RESNET:
     OUT_FEATS = 1
     model = torchvision.models.resnet18()
     model.fc = nn.Linear(in_features=512, out_features=OUT_FEATS, bias=True)
-else: 
+else:
     model = CustomAgeNetwork()
-model.load_state_dict(torch.load(MODEL_PATH))
+model.load_state_dict(torch.load(MODEL_PATH, map_location=map_location))
 model.to(DEVICE)
 
 img_size = (int(os.getenv("IMG_WIDTH")), int(os.getenv("IMG_HEIGHT")))
@@ -97,7 +99,9 @@ def test_acc(data_loader, mode):
             end_idx = start_idx + BATCH_SIZE
             for f_idx, (f_path, class_num) in enumerate(data_loader.dataset.samples[start_idx:end_idx]):
                 # Use file path to get attributes val_orig/old/female
-                full_key = "_".join(f_path.split("/")[-3:-1]) # ex: old_female_no_smile
+                sex = "female" if "female" in f_path else "male"
+                age = "young" if "young" in f_path else "old"
+                full_key = "_".join([age, sex]) # ex: old_female_no_smile
                 if correct[f_idx] == True:
                     total_correct += 1
                     results[full_key]['correct'] = results[full_key]['correct'] + 1
@@ -111,5 +115,5 @@ def test_acc(data_loader, mode):
 
 if __name__ == "__main__":
     # test_acc(train_loader, "train")
-    test_acc(val_loader, "val")
-    # test_acc(test_loader, "test")
+    # test_acc(val_loader, "val")
+    test_acc(test_loader, "test")

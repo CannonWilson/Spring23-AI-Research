@@ -52,8 +52,8 @@ VAL_DIR, TEST_DIR = os.getenv("VAL_DIR"), os.getenv("TEST_DIR")
 # val_loader = DataLoader(val_data, batch_size=BATCH_SIZE)
 val_loader_no_trans = DataLoader(datasets.ImageFolder(VAL_DIR), batch_size=1)
 NUM_VAL_IMGS = len(val_loader_no_trans)
-test_data = datasets.ImageFolder(TEST_DIR, transform=data_transforms)
-test_loader = DataLoader(test_data, batch_size=BATCH_SIZE)
+# test_data = datasets.ImageFolder(TEST_DIR, transform=data_transforms)
+# test_loader = DataLoader(test_data, batch_size=BATCH_SIZE)
 test_loader_no_trans = DataLoader(datasets.ImageFolder(TEST_DIR), batch_size=1)
 NUM_TEST_IMGS = len(test_loader_no_trans)
 trained_svms, scalers = [], []
@@ -117,11 +117,6 @@ assert len(MODES) == len(trained_svms) == len(scalers), \
 
 print("Finished training SVMs on validation data.")
 for mode, svm_c, scaler in zip(MODES, trained_svms, scalers):
-
-    # Calculate SVM accuracy
-    #  -- Loop over all test images in class
-    #  -- Get correctness
-    #  -- Compare SVM output with correctness to get svm acc
 
     current_class_num = 1 if mode == 'young' else 0
     test_paths = [tup[0] for tup in test_loader_no_trans.dataset.samples \
@@ -206,8 +201,8 @@ for mode, svm_c, scaler in zip(MODES, trained_svms, scalers):
         if NUM_CORRS == 2:
             conf_num_smiles = conf_sorted_smiles[:num_people].sum()
             ds_num_smiles = ds_sorted_smiles[:num_people].sum()
-            conf_sorted_frac_smiles[num_people] = conf_num_smiles / num_people
-            ds_sorted_frac_smiles[num_people] = ds_num_smiles / num_people
+            conf_sorted_frac_smiles[num_people-1] = conf_num_smiles / num_people
+            ds_sorted_frac_smiles[num_people-1] = ds_num_smiles / num_people
 
     if mode == "old":
         minority_sex = "Female" # pylint: disable=invalid-name
