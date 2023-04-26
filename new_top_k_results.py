@@ -27,7 +27,7 @@ print('Initializing Models and Loaders')
 
 # Misc vars
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-MODES = ["old", "young"]
+MODES = ["young"]# ["old", "young"]
 sigmoid = nn.Sigmoid()
 
 # Custom model
