@@ -16,6 +16,15 @@ from mean_train import MEANS, STDEVS
 
 load_dotenv()
 
+# # Util functions
+# def get_clip_feats_for_paths(paths, process, model, device):
+#     pil_images = []
+#     for path in paths: 
+#         pil_images.append(process(Image.open(path)))
+#     image_input = torch.tensor(np.stack(pil_images), device=device)
+#     feat_stack = model.encode_image(image_input).float()
+#     return feat_stack
+
 # Vars
 CALC_SVM_ACC = True
 NUM_CORRS = int(os.getenv("NUM_CORRS"))
@@ -27,7 +36,7 @@ print('Initializing Models and Loaders')
 
 # Misc vars
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-MODES = ["young"]# ["old", "young"]
+MODES = ["old"] # ["old", "young"]
 sigmoid = nn.Sigmoid()
 
 # Custom model
@@ -45,17 +54,11 @@ data_transforms = transforms.Compose([
     transforms.Normalize(mean=list(MEANS.values()), std=list(STDEVS.values()))
 ])
 
-# SVMs are trained on *val* set
-# Top_K is evaluated on *test* set
+# SVMs are trained on *val* set, Top_K is evaluated on *test* set
 VAL_DIR, TEST_DIR = os.getenv("VAL_DIR"), os.getenv("TEST_DIR")
-# val_data = datasets.ImageFolder(VAL_DIR, transform=data_transforms)
-# val_loader = DataLoader(val_data, batch_size=BATCH_SIZE)
 val_loader_no_trans = DataLoader(datasets.ImageFolder(VAL_DIR), batch_size=1)
 NUM_VAL_IMGS = len(val_loader_no_trans)
-# test_data = datasets.ImageFolder(TEST_DIR, transform=data_transforms)
-# test_loader = DataLoader(test_data, batch_size=BATCH_SIZE)
 test_loader_no_trans = DataLoader(datasets.ImageFolder(TEST_DIR), batch_size=1)
-NUM_TEST_IMGS = len(test_loader_no_trans)
 trained_svms, scalers = [], []
 
 # CLIP
@@ -98,7 +101,6 @@ for mode in MODES:
             pil_images.append(clip_preprocess(Image.open(path)))
         image_input = torch.tensor(np.stack(pil_images), device=DEVICE)
         img_feature_stack = clip_model.encode_image(image_input).float() # [2000, 512]
-        print(f"Expected {(num_imgs_this_class, EMBEDDING_DIM)}, got {img_feature_stack.size()}")
 
     print('Finished getting clip embeddings and correctness scores.')
     print('Beginning to fit SVM classifier for class ', mode)
@@ -148,7 +150,7 @@ for mode, svm_c, scaler in zip(MODES, trained_svms, scalers):
                 correct = torch.where(preds==labels, 1, -1)
                 test_correctness[cur_idx:cur_idx+b_size] = correct
             cur_idx += b_size
-    
+
     with torch.no_grad():
         print("Getting CLIP embeddings, attributes, and decision scores " +\
                 "for test images in class ", mode)
@@ -158,19 +160,18 @@ for mode, svm_c, scaler in zip(MODES, trained_svms, scalers):
             sexes[i] = 0 if 'female' in path else 1
             if NUM_CORRS == 2:
                 smiles[i] = 0 if 'no_smile' in path else 1
-        image_input = torch.tensor(np.stack(pil_images), device=DEVICE)
-        test_feat_stack = torch.empty(IMGS_THIS_CLASS, EMBEDDING_DIM)
+        test_feat_stack = torch.empty(IMGS_THIS_CLASS, EMBEDDING_DIM, device=DEVICE)
         num_test_batches = image_input.size()[0] // BATCH_SIZE
         cur_idx = 0
         for b_idx in range(num_test_batches):
             end_idx = cur_idx + BATCH_SIZE
-            if end_idx >= image_input.size()[0]:
-                end_idx = image_input.size()[0]
+            if end_idx >= IMGS_THIS_CLASS:
+                end_idx = IMGS_THIS_CLASS
+            image_input = torch.tensor(np.stack(pil_images[cur_idx:end_idx]), device=DEVICE)
             test_feat_stack[cur_idx:end_idx] = \
-                clip_model.encode_image(image_input[cur_idx:end_idx]).float()
+                clip_model.encode_image(image_input).float()
             cur_idx += BATCH_SIZE
-        print(f"Test feature stack size: {test_feat_stack.size()}")
-        scaled_test_feats = scaler.transform(test_feat_stack)
+        scaled_test_feats = scaler.transform(test_feat_stack.cpu().numpy())
         ds_values = svm_c.decision_function(scaled_test_feats)
 
     if CALC_SVM_ACC:

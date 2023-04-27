@@ -33,18 +33,18 @@ assert os.path.exists(CSV_FILE), \
 # Create the train/val/test directories
 TRAIN_DIR, VAL_DIR, TEST_DIR = os.getenv("TRAIN_DIR"), os.getenv("VAL_DIR"), os.getenv("TEST_DIR")
 
-response = input("The scipt will delete any "+\
-                 "existing train/val/test directory. "+\
-                 "Would you like to continue? yes/no: ")
-if response != "yes":
-    print("Did not type 'yes'. Exiting.")
-    sys.exit()
+# response = input("The scipt will delete any "+\
+#                  "existing train/val/test directory. "+\
+#                  "Would you like to continue? yes/no: ")
+# if response != "yes":
+#     print("Did not type 'yes'. Exiting.")
+#     sys.exit()
 
 # Remove train/val/test directories if they already exist
-for data_dir in [TRAIN_DIR, VAL_DIR, TEST_DIR]:
-    if os.path.exists(data_dir) and os.path.isdir(data_dir):
-        print("Found existing TRAIN|VAL|TEST dir. Removing.")
-        shutil.rmtree(data_dir)
+# for data_dir in [TRAIN_DIR, VAL_DIR, TEST_DIR]:
+#     if os.path.exists(data_dir) and os.path.isdir(data_dir):
+#         print("Found existing TRAIN|VAL|TEST dir. Removing.")
+#         shutil.rmtree(data_dir)
 
 SUB_DIRS = [os.path.join("old", "male"),
             os.path.join("old", "female"),
@@ -52,11 +52,11 @@ SUB_DIRS = [os.path.join("old", "male"),
             os.path.join("young", "female")]
 
 for sdir in SUB_DIRS:
-    tr_dir = os.path.join(TRAIN_DIR, sdir)
-    va_dir = os.path.join(VAL_DIR, sdir)
+    # tr_dir = os.path.join(TRAIN_DIR, sdir)
+    # va_dir = os.path.join(VAL_DIR, sdir)
     te_dir = os.path.join(TEST_DIR, sdir)
-    Path(tr_dir).mkdir(parents=True, exist_ok=True)
-    Path(va_dir).mkdir(parents=True, exist_ok=True)
+    # Path(tr_dir).mkdir(parents=True, exist_ok=True)
+    # Path(va_dir).mkdir(parents=True, exist_ok=True)
     Path(te_dir).mkdir(parents=True, exist_ok=True)
 
 celeb_dir_path = Path(CELEB_DIR)
@@ -82,7 +82,7 @@ val_counts = {subgroup: 0 for subgroup in VAL_LIMS}
 # Read in attributes from csv
 celeba_df = pd.read_csv(CSV_FILE)
 count = 0 # pylint: disable=invalid-name
-
+"""
 for f_path in celeb_paths:
 
     if count%10000 == 0:
@@ -112,7 +112,7 @@ for f_path in celeb_paths:
         else: # if not copying, just move file
             shutil.move(f_path, destination_path)
         val_counts[full_key] = val_counts[full_key] + 1
-
+"""
 print("Finished creating training and validation sets.")
 print("TRAIN COUNTS: ", train_counts)
 print("VAL COUNTS: ", val_counts)
