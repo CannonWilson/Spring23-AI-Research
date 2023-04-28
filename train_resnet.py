@@ -12,9 +12,7 @@ from mean_train import MEANS, STDEVS
 
 load_dotenv()
 
-assert torch.cuda.is_available(), "GPU is not available!"
-print(torch.cuda.device_count())
-DEVICE = f'cuda:{torch.cuda.device_count()-1}'
+DEVICE = f'cuda:{torch.cuda.device_count()-1}' if torch.cuda.is_available() else 'cpu'
 
 # From paper
 BATCH_SIZE = 512
@@ -27,8 +25,8 @@ PEAK_EPOCH = 2
 # Other vars
 DESTINATION_PATH = os.getenv("MODEL_PATH")
 print(f'Beginning training. Saving model to {DESTINATION_PATH}')
-LR_INIT= 0.2 # This is just a guess based on how initial LR for CIFAR was 0.5
-OUT_FEATS = 1 # Using BCE
+LR_INIT= 0.5 # This is just a guess based on how initial LR for CIFAR was 0.5 in Example notebook
+OUT_FEATS = 2 # CHANGED FROM 1
 img_size = (int(os.getenv("IMG_WIDTH")), int(os.getenv("IMG_HEIGHT")))
 assert img_size == (75, 75), "Images must be 75x75"
 data_transforms = transforms.Compose([
@@ -69,8 +67,10 @@ def get_lr(epo):
     return lr_schedule[epo]
 scheduler = lr_scheduler.LambdaLR(optimizer, get_lr)
 scaler = GradScaler()
-bce_loss = nn.BCEWithLogitsLoss() # nn.BCEWithLogitsLoss(reduction='none')
+# bce_loss = nn.BCEWithLogitsLoss() # nn.BCEWithLogitsLoss(reduction='none')
+ce_loss = nn.CrossEntropyLoss()
 sigmoid = nn.Sigmoid()
+softmax = nn.Softmax()
 
 for epoch in range(EPOCHS):
     epoch_loss = 0
@@ -81,15 +81,16 @@ for epoch in range(EPOCHS):
         images = images.to(DEVICE)
         labels = labels.to(DEVICE)
         with autocast():
-            logits = model(images).squeeze()
-            loss = bce_loss(logits, labels.float())
+            logits = model(images) # model(images).squeeze()
+            loss = ce_loss(logits, labels.long()) # bce_loss(logits, labels.float())
             epoch_loss += loss
         scaler.scale(loss).backward()
         scaler.step(optimizer)
         scaler.update()
         scheduler.step()
 
-        pred = sigmoid(logits) > 0.5
+        # pred = sigmoid(logits) > 0.5
+        pred = torch.argmax(logits, dim=1)
         correct = pred == labels
         epoch_correct += correct.sum()
         epoch_total += labels.size()[0]

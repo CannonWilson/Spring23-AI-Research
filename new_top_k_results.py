@@ -36,7 +36,7 @@ print('Initializing Models and Loaders')
 
 # Misc vars
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-MODES = ["old"] # ["old", "young"]
+MODES = ["young"] # ["old", "young"]
 sigmoid = nn.Sigmoid()
 
 # Custom model
@@ -59,7 +59,8 @@ VAL_DIR, TEST_DIR = os.getenv("VAL_DIR"), os.getenv("TEST_DIR")
 val_loader_no_trans = DataLoader(datasets.ImageFolder(VAL_DIR), batch_size=1)
 NUM_VAL_IMGS = len(val_loader_no_trans)
 test_loader_no_trans = DataLoader(datasets.ImageFolder(TEST_DIR), batch_size=1)
-trained_svms, scalers = [], []
+trained_svms = []
+scalers = []
 
 # CLIP
 EMBEDDING_DIM = 512
@@ -104,21 +105,24 @@ for mode in MODES:
 
     print('Finished getting clip embeddings and correctness scores.')
     print('Beginning to fit SVM classifier for class ', mode)
-    svm_classifier = LinearSVC(max_iter=5000) # old code: svm_classifier = svm.SVC(kernel="linear")
+    # svm_classifier = LinearSVC(max_iter=5000) 
+    svm_classifier = svm.SVC(kernel="linear")
     np_feat_stack = img_feature_stack.cpu().numpy()
     np_corr = np.array(correctness.cpu(), dtype=np.int8)
-    scaler = StandardScaler()
-    scaler.fit(np_feat_stack)
-    scaled_feat_stack = scaler.transform(np_feat_stack)
-    svm_classifier.fit(scaled_feat_stack, np_corr)
+    # scaler = StandardScaler()
+    # scaler.fit(np_feat_stack)
+    # scaled_feat_stack = scaler.transform(np_feat_stack)
+    # svm_classifier.fit(scaled_feat_stack, np_corr)
+    svm_classifier.fit(np_feat_stack, np_corr)
     trained_svms.append(svm_classifier)
-    scalers.append(scaler)
+    # scalers.append(scaler)
 
-assert len(MODES) == len(trained_svms) == len(scalers), \
+assert len(MODES) == len(trained_svms), \
     "Number of fitted SVMs not equal to number of classes"
 
 print("Finished training SVMs on validation data.")
-for mode, svm_c, scaler in zip(MODES, trained_svms, scalers):
+# for mode, svm_c, scaler in zip(MODES, trained_svms, scalers):
+for mode, svm_c in zip(MODES, trained_svms):
 
     current_class_num = 1 if mode == 'young' else 0
     test_paths = [tup[0] for tup in test_loader_no_trans.dataset.samples \
@@ -128,7 +132,8 @@ for mode, svm_c, scaler in zip(MODES, trained_svms, scalers):
     if CALC_SVM_ACC:
         test_correctness = torch.empty(IMGS_THIS_CLASS)
     ds_values = None
-    pil_images, sexes = [], np.empty(IMGS_THIS_CLASS)
+    pil_images = []
+    sexes = np.empty(IMGS_THIS_CLASS)
     smiles = np.empty(IMGS_THIS_CLASS) if NUM_CORRS == 2 else None
 
     with torch.no_grad():
@@ -161,18 +166,24 @@ for mode, svm_c, scaler in zip(MODES, trained_svms, scalers):
             if NUM_CORRS == 2:
                 smiles[i] = 0 if 'no_smile' in path else 1
         test_feat_stack = torch.empty(IMGS_THIS_CLASS, EMBEDDING_DIM, device=DEVICE)
-        num_test_batches = image_input.size()[0] // BATCH_SIZE
+        num_test_batches = int(np.ceil(IMGS_THIS_CLASS / BATCH_SIZE))
         cur_idx = 0
-        for b_idx in range(num_test_batches):
+        for _ in range(num_test_batches):
             end_idx = cur_idx + BATCH_SIZE
-            if end_idx >= IMGS_THIS_CLASS:
+            if end_idx > IMGS_THIS_CLASS:
                 end_idx = IMGS_THIS_CLASS
-            image_input = torch.tensor(np.stack(pil_images[cur_idx:end_idx]), device=DEVICE)
+            image_input = torch.stack(pil_images[cur_idx:end_idx])
             test_feat_stack[cur_idx:end_idx] = \
                 clip_model.encode_image(image_input).float()
             cur_idx += BATCH_SIZE
-        scaled_test_feats = scaler.transform(test_feat_stack.cpu().numpy())
-        ds_values = svm_c.decision_function(scaled_test_feats)
+        # scaled_test_feats = scaler.transform(test_feat_stack.cpu().numpy())
+        # ds_values = svm_c.decision_function(scaled_test_feats)
+        # ds_values = np.dot(svm_c.coef_[0], \
+        #     scaled_test_feats.transpose()) + \
+        #         svm_c.intercept_[0]
+        ds_values = np.dot(svm_c.coef_[0], \
+            test_feat_stack.cpu().numpy().transpose()) + \
+                svm_c.intercept_[0]
 
     if CALC_SVM_ACC:
         test_correctness = test_correctness.cpu().numpy()
@@ -183,7 +194,7 @@ for mode, svm_c, scaler in zip(MODES, trained_svms, scalers):
 
     print('Plotting/saving results for class ', mode)
     conf_sorted_idxs =  np.argsort(confidences.cpu().numpy())
-    ds_sorted_idxs = np.argsort(ds_values)
+    ds_sorted_idxs = np.flip(np.argsort(ds_values))
     conf_sorted_sexes = sexes[conf_sorted_idxs]
     ds_sorted_sexes = sexes[ds_sorted_idxs]
     conf_sorted_frac_male = np.empty(IMGS_THIS_CLASS)
