@@ -10,21 +10,22 @@ from mean_train import MEANS, STDEVS
 
 load_dotenv()
 
+NUM_CORRS = int(os.getenv("NUM_CORRS"))
+assert NUM_CORRS in [1,2], "Can only handle 1-2 correlations in data"
 USE_RESNET = True
 BATCH_SIZE = 512
-assert torch.cuda.is_available(), "GPU is not available!"
-DEVICE = f'cuda:{torch.cuda.device_count()-1}'
+DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 
 # Load model
 MODEL_PATH = os.getenv("MODEL_PATH")
 if USE_RESNET:
-    OUT_FEATS = 1
+    OUT_FEATS = 2
     model = torchvision.models.resnet18()
     model.fc = nn.Linear(in_features=512, out_features=OUT_FEATS, bias=True)
 else: 
     model = CustomAgeNetwork()
-model.load_state_dict(torch.load(MODEL_PATH))
+model.load_state_dict(torch.load(MODEL_PATH, map_location=DEVICE))
 model.to(DEVICE)
 
 img_size = (int(os.getenv("IMG_WIDTH")), int(os.getenv("IMG_HEIGHT")))
@@ -46,6 +47,11 @@ def loader(dirn):
 TRAIN_DIR, VAL_DIR, TEST_DIR = os.getenv("TRAIN_DIR"), os.getenv("VAL_DIR"), os.getenv("TEST_DIR")
 train_loader, val_loader, test_loader = loader(TRAIN_DIR), loader(VAL_DIR), loader(TEST_DIR)
 
+list_1_corr = ['old_female', 'old_male', 'young_female', 'young_male']
+list_2_corr = ['old_female_no_smile', 'old_female_smile', 'old_male_no_smile', \
+               'old_male_smile', 'young_female_no_smile', 'young_female_smile', \
+                'young_male_no_smile', 'young_male_smile']
+
 def test_acc(data_loader, mode):
     """
     Loop through the data loader
@@ -56,44 +62,11 @@ def test_acc(data_loader, mode):
     """
 
     # stores number of correct classifications for each subgroup
-    results = {
-        'old_female_no_smile': {
-            'correct': 0,
-            'total': 0
-        },
-        'old_female_smile': {
-            'correct': 0,
-            'total': 0
-        },
-        'old_male_no_smile': {
-            'correct': 0,
-            'total': 0
-        },
-        'old_male_smile': {
-            'correct': 0,
-            'total': 0
-        },
-        'young_female_no_smile': {
-            'correct': 0,
-            'total': 0
-        },
-        'young_female_smile': {
-            'correct': 0,
-            'total': 0
-        },
-        'young_male_no_smile': {
-            'correct': 0,
-            'total': 0
-        },
-        'young_male_smile': {
-            'correct': 0,
-            'total': 0
-        }
-    }
+    corr_list = list_1_corr if NUM_CORRS == 1 else list_2_corr
+    results = {subgroup: {'correct': 0, 'total': 0} for subgroup in corr_list}
 
     total_correct = 0
     total_num = 0
-    sigmoid = nn.Sigmoid()
 
     with torch.no_grad():
         model.eval()
@@ -103,17 +76,24 @@ def test_acc(data_loader, mode):
             images = images.to(DEVICE)
             labels = labels.to(DEVICE)
             # Custom model
-            logits = model(images).squeeze()
-            pred = sigmoid(logits) > 0.5
+            logits = model(images) # model(images).squeeze()
+            # pred = sigmoid(logits) > 0.5
+            pred = torch.argmax(logits, dim=1)
             correct = pred == labels
             epoch_correct += correct.sum()
             epoch_total += labels.size()[0]
             
             start_idx = i * BATCH_SIZE
-            end_idx = start_idx + BATCH_SIZE
+            end_idx = start_idx + labels.size()[0]
             for f_idx, (f_path, class_num) in enumerate(data_loader.dataset.samples[start_idx:end_idx]):
                 # Use file path to get attributes
-                full_key = "_".join(f_path.split("/")[-4:-1]) # ex: old_female_no_smile
+                age = "young" if "young" in f_path else "old"
+                sex = "female" if "female" in f_path else "male"
+                if NUM_CORRS == 1:
+                    full_key = "_".join([age, sex]) # ex: old_female
+                else:
+                    smile = "no_smile" if "no_smile" in f_path else "smile"
+                    full_key = "_".join([age,sex,smile])
                 if correct[f_idx] == True:
                     total_correct += 1
                     results[full_key]['correct'] = results[full_key]['correct'] + 1
@@ -127,5 +107,5 @@ def test_acc(data_loader, mode):
 
 if __name__ == "__main__":
     # test_acc(train_loader, "train")
-    test_acc(val_loader, "val")
-    # test_acc(test_loader, "test")
+    # test_acc(val_loader, "val")
+    test_acc(test_loader, "test")

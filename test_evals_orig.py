@@ -10,6 +10,7 @@ from mean_train import MEANS, STDEVS
 
 load_dotenv()
 
+NUM_CORRS = os.getenv("NUM_CORRS")
 USE_RESNET = True
 BATCH_SIZE = 512
 DEVICE = f'cuda' if torch.cuda.is_available() else 'cpu'
@@ -101,7 +102,10 @@ def test_acc(data_loader, mode):
                 # Use file path to get attributes val_orig/old/female
                 sex = "female" if "female" in f_path else "male"
                 age = "young" if "young" in f_path else "old"
-                full_key = "_".join([age, sex]) # ex: old_female_no_smile
+                full_key = "_".join([age, sex]) # ex: old_female
+                if NUM_CORRS == 2:
+                    smiling = "no_smile" if "no_smile" in f_path else "smile"
+                    full_key = "_".join(age,sex,smiling)
                 if correct[f_idx] == True:
                     total_correct += 1
                     results[full_key]['correct'] = results[full_key]['correct'] + 1

@@ -36,13 +36,14 @@ print('Initializing Models and Loaders')
 
 # Misc vars
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-MODES = ["young"] # ["old", "young"]
+MODES = ["old"] # ["old", "young"]
 sigmoid = nn.Sigmoid()
 
 # Custom model
 CUSTOM_MODEL_PATH = os.getenv("MODEL_PATH")
+OUT_FEATS = 2
 custom_model = torchvision.models.resnet18()
-custom_model.fc = nn.Linear(in_features=512, out_features=1, bias=True)
+custom_model.fc = nn.Linear(in_features=512, out_features=OUT_FEATS, bias=True)
 custom_model.load_state_dict(torch.load(CUSTOM_MODEL_PATH, map_location=DEVICE))
 custom_model.to(DEVICE)
 
@@ -85,9 +86,10 @@ for mode in MODES:
             images = images.to(DEVICE)
             labels = labels.to(DEVICE)
             b_size = labels.size()[0]
-            model_output = custom_model(images).squeeze()
-            sig_out = sigmoid(model_output)
-            preds = torch.where(sig_out>0.5, 1, 0)
+            model_output = custom_model(images) #.squeeze()
+            # sig_out = sigmoid(model_output)
+            # preds = torch.where(sig_out>0.5, 1, 0)
+            preds = torch.argmax(model_output, dim=1)
             correct = torch.where(preds==labels, 1, -1)
             correctness[cur_idx:cur_idx+b_size] = correct
             cur_idx += b_size
@@ -146,12 +148,14 @@ for mode, svm_c in zip(MODES, trained_svms):
             images = images.to(DEVICE)
             labels = labels.to(DEVICE)
             b_size = labels.size()[0]
-            model_output = custom_model(images).squeeze()
-            sig_out = sigmoid(model_output)
-            conf = torch.abs(0.5-sig_out) # confidence represented by distance to 0.5
+            model_output = custom_model(images) #.squeeze()
+            # sig_out = sigmoid(model_output)
+            # conf = torch.abs(0.5-sig_out) # confidence represented by distance to 0.5
+            conf = torch.max(model_output, dim=1).values
             confidences[cur_idx:cur_idx+b_size] = conf
             if CALC_SVM_ACC:
-                preds = torch.where(sig_out>0.5, 1, 0)
+                # preds = torch.where(sig_out>0.5, 1, 0)
+                preds = torch.argmax(model_output, dim=1)
                 correct = torch.where(preds==labels, 1, -1)
                 test_correctness[cur_idx:cur_idx+b_size] = correct
             cur_idx += b_size

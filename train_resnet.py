@@ -42,7 +42,7 @@ def loader(dirn):
     return DataLoader(datasets.ImageFolder(dirn, transform=data_transforms), batch_size=BATCH_SIZE, shuffle=True)
 
 TRAIN_DIR= os.getenv("TRAIN_DIR")
-train_loader = loader(TRAIN_DIR)
+train_loader = DataLoader(datasets.ImageFolder(TRAIN_DIR, transform=data_transforms), batch_size=BATCH_SIZE, shuffle=True)
 
 model = torchvision.models.resnet18()
 # overwrite the last layer of resnet to use
