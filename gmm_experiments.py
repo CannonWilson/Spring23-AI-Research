@@ -31,7 +31,7 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 MODES = ['old'] # ["old", "young"]
 BATCH_SIZE = 512
 OUT_FEATS = 2
-NUM_COMPS = 2 # number of subgroups on each side of the dividing hyperplane
+NUM_COMPS = 4 # number of subgroups on each side of the dividing hyperplane
 NUM_IMGS = 200 # max number of images to include in animate
 sigmoid = nn.Sigmoid()
 
@@ -144,7 +144,7 @@ for mode in MODES:
                 plt.imshow(np.asarray(pil_img))
                 plt.title(f"{mode} {key} {paths[img_idx]}")
                 plt.show()
-
+    """
     # Need some notion of how good the clusters are
     # in order to test different clustering methods
     # HDBSCAN vs GMM for instance
@@ -178,109 +178,67 @@ for mode in MODES:
     # sex failure direction (very well) and
     # how well it captures the smiling failure 
     # direction (not as well) 
-    easy_clusters = easy_gm.predict(clip_embeds[easy_idxs])
-    diff_clusters = diff_gm.predict(clip_embeds[diff_idxs])
-    easy_res = {cluster: {f'{mode}_female_no_smile': 0,
+    """
+
+    # Create NUM_COMP clusters
+    # on the entire CLIP space, 
+    # then compare by hard vs. easy
+    # def test_acc(model, mode_desc):
+    model = GaussianMixture(n_components=NUM_COMPS, random_state=0)
+    mode_desc = 'Gaussian Mix'
+    full_clusters = model.fit_predict(clip_embeds)
+    full_res = {cluster: {f'{mode}_female_no_smile': 0,
                         f'{mode}_female_smile': 0,
                         f'{mode}_male_no_smile': 0,
                         f'{mode}_male_smile': 0} 
                         for cluster in range(NUM_COMPS)}
-    diff_res = copy.deepcopy(easy_res)
-    for i, easy_i in enumerate(easy_idxs):
-        path = paths[easy_i]
+    for i, path in enumerate(paths):
         sex = 'female' if 'female' in path else 'male'
         smile = 'no_smile' if 'no_smile' in path else 'smile'
-        cluster = easy_clusters[i]
+        cluster = full_clusters[i]
         key = f'{mode}_{"_".join([sex,smile])}'
-        easy_res[cluster][key] = easy_res[cluster][key] + 1
-    for i, diff_i in enumerate(diff_idxs):
-        path = paths[diff_i]
-        sex = 'female' if 'female' in path else 'male'
-        smile = 'no_smile' if 'no_smile' in path else 'smile'
-        cluster = diff_clusters[i]
-        key = f'{mode}_{"_".join([sex,smile])}'
-        diff_res[cluster][key] = diff_res[cluster][key] + 1
-
-    # Now, with easy_res and diff_res indicating the counts of 
-    # each subgroup in the cluster, calculate scores
-    for cluster, res_dict in easy_res.items():
+        full_res[cluster][key] = full_res[cluster][key] + 1
+    for cluster, res_dict in full_res.items():
         res_dict['sex_score'] = (res_dict[f'{mode}_female_no_smile'] + \
-                                 res_dict[f'{mode}_female_smile']) - \
-                                 (res_dict[f'{mode}_male_no_smile'] + \
-                                  res_dict[f'{mode}_male_smile'])                    
+                                res_dict[f'{mode}_female_smile']) - \
+                                (res_dict[f'{mode}_male_no_smile'] + \
+                                res_dict[f'{mode}_male_smile'])                    
         res_dict['smile_score'] = (res_dict[f'{mode}_female_no_smile'] + \
-                                  res_dict[f'{mode}_male_no_smile']) - \
-                                   (res_dict[f'{mode}_female_smile'] + \
+                                res_dict[f'{mode}_male_no_smile']) - \
+                                (res_dict[f'{mode}_female_smile'] + \
                                     res_dict[f'{mode}_male_smile'])
-    for cluster, res_dict in diff_res.items():
-        res_dict['sex_score'] = (res_dict[f'{mode}_female_no_smile'] + \
-                                 res_dict[f'{mode}_female_smile']) - \
-                                 (res_dict[f'{mode}_male_no_smile'] + \
-                                  res_dict[f'{mode}_male_smile'])                    
-        res_dict['smile_score'] = (res_dict[f'{mode}_female_no_smile'] + \
-                                  res_dict[f'{mode}_male_no_smile']) - \
-                                   (res_dict[f'{mode}_female_smile'] + \
-                                    res_dict[f'{mode}_male_smile'])
-        
-    # Calculate the inter_cluster differences
-    diffs = {f"{e_i}-{d_i}": {'sex_diff':0, 'smile_diff':0} \
-             for e_i in range(NUM_COMPS) for d_i in range(NUM_COMPS) }
-    abs_score = 0
-    for pairing, diff_dict in diffs.items():
-        e_i, d_i = [int(i) for i in pairing.split("-")]
-        sex_diff = easy_res[e_i]['sex_score'] - diff_res[d_i]['sex_score']
-        smile_diff = easy_res[e_i]['smile_score'] - diff_res[d_i]['smile_score']
+    all_pairings = [f"{e_i}-{d_i}" for e_i in range(NUM_COMPS) for d_i in range(NUM_COMPS)]
+    full_diffs = {}
+    for pair in all_pairings:
+        e_i, d_i = pair.split("-")
+        if f"{d_i}-{e_i}" in full_diffs or e_i == d_i:
+            continue
+        full_diffs[pair] = {'sex_diff':0, 'smile_diff':0}
+    full_score = 0
+    for pair, diff_dict in full_diffs.items():
+        e_i, d_i = [int(i) for i in pair.split("-")]
+        sex_diff = full_res[e_i]['sex_score'] - full_res[d_i]['sex_score']
+        smile_diff = full_res[e_i]['smile_score'] - full_res[d_i]['smile_score']
         diff_dict['sex_diff'] = sex_diff
         diff_dict['smile_diff'] = smile_diff
-        abs_score += abs(sex_diff) + abs(smile_diff)
+        full_score += abs(sex_diff) + abs(smile_diff)
     
-    print('Calculated abs score: ', abs_score)
+    print(f'Calculated abs score for mode: {mode_desc}', full_score)
+    print('full_diff: ', full_diffs)
 
-    # Now, compare that to training 4 clusters
-    # on the CLIP space without separating by 
-    # hard/easy
-    def test_acc(model, mode_desc):
-        full_clusters = model.fit_predict(clip_embeds)
-        full_res = {cluster: {f'{mode}_female_no_smile': 0,
-                            f'{mode}_female_smile': 0,
-                            f'{mode}_male_no_smile': 0,
-                            f'{mode}_male_smile': 0} 
-                            for cluster in range(NUM_COMPS*2)}
-        for i, path in enumerate(paths):
-            sex = 'female' if 'female' in path else 'male'
-            smile = 'no_smile' if 'no_smile' in path else 'smile'
-            cluster = full_clusters[i]
-            key = f'{mode}_{"_".join([sex,smile])}'
-            full_res[cluster][key] = full_res[cluster][key] + 1
-        for cluster, res_dict in full_res.items():
-            res_dict['sex_score'] = (res_dict[f'{mode}_female_no_smile'] + \
-                                    res_dict[f'{mode}_female_smile']) - \
-                                    (res_dict[f'{mode}_male_no_smile'] + \
-                                    res_dict[f'{mode}_male_smile'])                    
-            res_dict['smile_score'] = (res_dict[f'{mode}_female_no_smile'] + \
-                                    res_dict[f'{mode}_male_no_smile']) - \
-                                    (res_dict[f'{mode}_female_smile'] + \
-                                        res_dict[f'{mode}_male_smile'])
-        all_pairings = [f"{e_i}-{d_i}" for e_i in range(NUM_COMPS*2) for d_i in range(NUM_COMPS*2)]
-        full_diffs = {}
-        for pair in all_pairings:
-            e_i, d_i = pair.split("-")
-            if f"{d_i}-{e_i}" in full_diffs or e_i == d_i:
-                continue
-            full_diffs[pair] = {'sex_diff':0, 'smile_diff':0}
-        full_score = 0
-        for pair, diff_dict in full_diffs.items():
-            e_i, d_i = [int(i) for i in pair.split("-")]
-            sex_diff = full_res[e_i]['sex_score'] - full_res[d_i]['sex_score']
-            smile_diff = full_res[e_i]['smile_score'] - full_res[d_i]['smile_score']
-            diff_dict['sex_diff'] = sex_diff
-            diff_dict['smile_diff'] = smile_diff
-            full_score += abs(sex_diff) + abs(smile_diff)
-        
-        print(f'Calculated abs score for mode: {mode_desc}', full_score)
-        print('full_diff: ', full_diffs)
+    print("Now considering only hard vs. easy clusters")
+    easy_clusters, diff_clusters = [], []
+    for cluster_i in range(NUM_COMPS):
+        mean = model.means_[cluster_i]
+        score = np.dot(svm_classifier.coef_[0], \
+            mean.transpose()) + \
+            svm_classifier.intercept_[0]
+        if score >= 0:
+            easy_clusters.append(cluster_i)
+            
+
     
-    test_acc(GaussianMixture(n_components=NUM_COMPS, random_state=0), 'Gaussian Mix')
-    test_acc(KMeans(n_clusters = NUM_COMPS,  random_state = 0), 'KMeans')
-    test_acc(AgglomerativeClustering(n_clusters = NUM_COMPS), 'Graphical Clustering')
-    test_acc(DBSCAN(eps=0.8, min_samples=50), 'DBSCAN' )
+    # test_acc(GaussianMixture(n_components=NUM_COMPS, random_state=0), 'Gaussian Mix')
+    # test_acc(KMeans(n_clusters = NUM_COMPS,  random_state = 0), 'KMeans')
+    # test_acc(AgglomerativeClustering(n_clusters = NUM_COMPS), 'Graphical Clustering')
+    # test_acc(DBSCAN(eps=0.8, min_samples=50), 'DBSCAN' )
