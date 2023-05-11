@@ -1,8 +1,9 @@
 # ignore dataset
-img_align* 
-train*
-val*
-test*
+data
+data/*
+img_align_celeba.zip
+img_align_celeba
+img_align_celeba/*
 
 idea/
 

@@ -1,13 +1,12 @@
 import torch.nn as nn
 import torch.nn.functional as F
 
-
 class CustomAgeNetwork(nn.Module):
 
     """
-    Class for my young/old binary
-    classifier for use on a 
-    modified CelebA dataset.
+    Class for my young/old
+    classifier for use on 
+    images from CelebA
     """
 
     def __init__(self):
@@ -38,22 +37,7 @@ class CustomAgeNetwork(nn.Module):
 
     def forward(self, x):
         """
-        Network architecture:
-
-        ## Blocks 1-4
-        Conv
-        Relu
-        BN
-        Conv
-        Relu
-        Max Pool
-        BN
-
-        ## FC
-        FC1
-        Relu
-        FC2
-        Softmax
+        Get model output
         """
         # Block 1
         x = self.bn1(F.relu(self.conv1(x)))
