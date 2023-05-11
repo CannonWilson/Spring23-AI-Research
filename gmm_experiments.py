@@ -28,7 +28,7 @@ print('Initializing Models')
 # Misc vars
 SHOW_IMGS = False
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-MODES = ['old'] # ["old", "young"]
+MODES = ['young'] # ["old", "young"]
 BATCH_SIZE = 512
 OUT_FEATS = 2
 NUM_COMPS = 4 # number of subgroups on each side of the dividing hyperplane
@@ -97,7 +97,8 @@ for mode in MODES:
         image_input = torch.tensor(np.stack(pil_images), device=DEVICE)
         clip_embeds = torch.empty((num_imgs_this_class, EMBEDDING_DIM), device=DEVICE)
         for start_i in range(0, num_imgs_this_class, BATCH_SIZE):
-            end_i = start_i + BATCH_SIZE if start_i + BATCH_SIZE < num_imgs_this_class else num_imgs_this_class
+            end_i = start_i + BATCH_SIZE if start_i + BATCH_SIZE < num_imgs_this_class \
+                else num_imgs_this_class
             clip_embeds[start_i:end_i] = clip_model.encode_image(image_input[start_i:end_i]).float()
 
     # Train SVM
@@ -222,9 +223,9 @@ for mode in MODES:
         diff_dict['sex_diff'] = sex_diff
         diff_dict['smile_diff'] = smile_diff
         full_score += abs(sex_diff) + abs(smile_diff)
-    
+
     print(f'Calculated abs score for mode: {mode_desc}', full_score)
-    print('full_diff: ', full_diffs)
+    print('full_diffs: ', full_diffs)
 
     print("Now considering only hard vs. easy clusters")
     easy_clusters, diff_clusters = [], []
@@ -233,11 +234,27 @@ for mode in MODES:
         score = np.dot(svm_classifier.coef_[0], \
             mean.transpose()) + \
             svm_classifier.intercept_[0]
-        if score >= 0:
+        # TODO: smarter way to figure out which side 
+        # should be considered easy/hard
+        if (score >= 0 and mode == 'young') or \
+            (score <=0 and mode == 'old'):
             easy_clusters.append(cluster_i)
-            
+        else:
+            diff_clusters.append(cluster_i)
 
-    
+    mod_full_diffs = {}
+    mod_score = 0
+    print('finding clusters that cross DS boundary')
+    for pair, pair_dic in full_diffs.items():
+        e_i, d_i = [int(i) for i in pair.split("-")]
+        if e_i in easy_clusters and d_i in diff_clusters:
+            print(full_diffs[f'{e_i}-{d_i}'])
+            mod_full_diffs[pair] = pair_dic
+            mod_score += abs(pair_dic['sex_diff']) + \
+                abs(pair_dic['smile_diff'])
+    print('Difference score for only clusters that ' +\
+          f'cross decision boundary: {mod_score}')
+
     # test_acc(GaussianMixture(n_components=NUM_COMPS, random_state=0), 'Gaussian Mix')
     # test_acc(KMeans(n_clusters = NUM_COMPS,  random_state = 0), 'KMeans')
     # test_acc(AgglomerativeClustering(n_clusters = NUM_COMPS), 'Graphical Clustering')
