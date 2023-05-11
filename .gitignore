@@ -9,6 +9,7 @@ idea/
 
 # My vscode stuff
 .vscode
+.vscode/*
 .pylintrc
 
 # Virtual environment (gets created in setup process)
