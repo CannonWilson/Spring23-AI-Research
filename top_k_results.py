@@ -10,7 +10,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from PIL import Image
 from sklearn import svm
-from mean_train import MEANS, STDEVS
+from dataset_utils.get_train_stats import MEANS, STDEVS
 
 load_dotenv()
 

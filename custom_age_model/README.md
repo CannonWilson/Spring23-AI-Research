@@ -16,7 +16,7 @@ ResNet, which is obviously much larger than
 this CNN. This speed made it ideal for 
 the early experiments I was running. 
 
-This model is no longer being used and may contain
+This model is **no longer being used** and may contain
 bugs that prevent it from working as the model
 in the other files. The current models being used
 in all experiments can be found in the 

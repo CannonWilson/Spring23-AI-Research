@@ -19,7 +19,7 @@ from PIL import Image
 from sklearn import svm
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import LinearSVC
-from mean_train import MEANS, STDEVS
+from dataset_utils.get_train_stats import MEANS, STDEVS
 
 load_dotenv()
 

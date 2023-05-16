@@ -1,18 +1,28 @@
-import os
+"""
+Train a new resnet model! Make 
+sure to check all of the info 
+in settings.py to ensure that
+the model will be trained
+and saved with the desired
+settings.
+"""
+
 import numpy as np
-from dotenv import load_dotenv
 import torch
 from torch.cuda.amp import GradScaler, autocast
 from torch.optim import SGD, lr_scheduler
-import torch.nn as nn
+from torch import nn
 from torch.utils.data import DataLoader
 import torchvision
 from torchvision import datasets, transforms
-from mean_train import MEANS, STDEVS
+from settings import NUM_CORRS, TRAIN_MEANS_1_CORR, TRAIN_MEANS_2_CORR, \
+    TRAIN_STDEVS_1_CORR, TRAIN_STDEVS_2_CORR, MODEL_PATH, \
+    IMG_WIDTH, IMG_HEIGHT, TRAIN_DIR
 
-load_dotenv()
+MEANS = TRAIN_MEANS_1_CORR if NUM_CORRS == 1 else TRAIN_MEANS_2_CORR
+STDEVS = TRAIN_STDEVS_1_CORR if NUM_CORRS == 1 else TRAIN_STDEVS_2_CORR
 
-DEVICE = f'cuda:{torch.cuda.device_count()-1}' if torch.cuda.is_available() else 'cpu'
+DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 # From paper
 BATCH_SIZE = 512
@@ -21,28 +31,19 @@ PEAK_LR = 0.02
 MOMENTUM = 0.9
 WEIGHT_DECAY = 5e-4
 PEAK_EPOCH = 2
+OUT_FEATS = 2 # Using cross entropy loss with 2 output feats
 
 # Other vars
-DESTINATION_PATH = os.getenv("MODEL_PATH")
-print(f'Beginning training. Saving model to {DESTINATION_PATH}')
+print(f'Beginning training. Saving model to {MODEL_PATH}')
 LR_INIT= 0.5 # This is just a guess based on how initial LR for CIFAR was 0.5 in Example notebook
-OUT_FEATS = 2 # CHANGED FROM 1
-img_size = (int(os.getenv("IMG_WIDTH")), int(os.getenv("IMG_HEIGHT")))
-assert img_size == (75, 75), "Images must be 75x75"
+img_size = (IMG_WIDTH, IMG_HEIGHT)
 data_transforms = transforms.Compose([
     transforms.Resize(img_size),
     transforms.ToTensor(),
     transforms.Normalize(mean=list(MEANS.values()), std=list(STDEVS.values()))
 ])
-def loader(dirn):
-    """ 
-    Create data using torchvision 
-    ImageFolder and torch DataLoader.
-    """
-    return DataLoader(datasets.ImageFolder(dirn, transform=data_transforms), batch_size=BATCH_SIZE, shuffle=True)
-
-TRAIN_DIR= os.getenv("TRAIN_DIR")
-train_loader = DataLoader(datasets.ImageFolder(TRAIN_DIR, transform=data_transforms), batch_size=BATCH_SIZE, shuffle=True)
+train_loader = DataLoader(datasets.ImageFolder(TRAIN_DIR, transform=data_transforms), \
+                          batch_size=BATCH_SIZE, shuffle=True)
 
 model = torchvision.models.resnet18()
 # overwrite the last layer of resnet to use
@@ -57,20 +58,21 @@ optimizer = SGD(model.parameters(),
                 weight_decay=WEIGHT_DECAY)
 
 # Implement a cyclic lr schedule
-# credit: https://github.com/MadryLab/failure-directions/blob/d484125c5f5d0d7ec8666f5bfce9d496b2af83b9/failure_directions/src/optimizers.py#L1
+# credit: https://github.com/MadryLab/failure-directions/blob/d484125c5f5d0d7ec8666f5bfce9d496b2af83b9/failure_directions/src/optimizers.py#L1 pylint:disable=line-too-long
 iters_per_epoch = len(train_loader)
 lr_schedule = np.interp(np.arange((EPOCHS+1) * iters_per_epoch),
                 [0, PEAK_EPOCH * iters_per_epoch, EPOCHS * iters_per_epoch],
                 [0, 1, 0])
 def get_lr(epo):
-    global lr_schedule
+    """
+    Simple learning rate indexer function
+    because torch optim's lr_scheduler
+    requires such a function as input
+    """
     return lr_schedule[epo]
 scheduler = lr_scheduler.LambdaLR(optimizer, get_lr)
 scaler = GradScaler()
-# bce_loss = nn.BCEWithLogitsLoss() # nn.BCEWithLogitsLoss(reduction='none')
 ce_loss = nn.CrossEntropyLoss()
-sigmoid = nn.Sigmoid()
-softmax = nn.Softmax()
 
 for epoch in range(EPOCHS):
     epoch_loss = 0
@@ -81,15 +83,14 @@ for epoch in range(EPOCHS):
         images = images.to(DEVICE)
         labels = labels.to(DEVICE)
         with autocast():
-            logits = model(images) # model(images).squeeze()
-            loss = ce_loss(logits, labels.long()) # bce_loss(logits, labels.float())
+            logits = model(images)
+            loss = ce_loss(logits, labels.long())
             epoch_loss += loss
         scaler.scale(loss).backward()
         scaler.step(optimizer)
         scaler.update()
         scheduler.step()
 
-        # pred = sigmoid(logits) > 0.5
         pred = torch.argmax(logits, dim=1)
         correct = pred == labels
         epoch_correct += correct.sum()
@@ -98,4 +99,4 @@ for epoch in range(EPOCHS):
     print('#### epoch: ', epoch+1,' #### ')
     print('loss: ', loss)
     print('acc: ', acc)
-    torch.save(model.state_dict(), DESTINATION_PATH)
+    torch.save(model.state_dict(), MODEL_PATH)

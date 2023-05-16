@@ -5,8 +5,8 @@ from torch.utils.data import DataLoader
 import torch.nn as nn
 import torchvision
 from torchvision import datasets, transforms
-from age_model import CustomAgeNetwork
-from mean_train import MEANS, STDEVS
+from custom_age_model.age_model import CustomAgeNetwork
+from dataset_utils.get_train_stats import MEANS, STDEVS
 
 load_dotenv()
 
