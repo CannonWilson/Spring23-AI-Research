@@ -3,6 +3,7 @@ Edit this file to change
 the data/models being
 used across the project
 """
+
 CELEBA_DIR = "img_align_celeba"
 CELEBA_HEADER = ['filename','5_o_Clock_Shadow','Arched_Eyebrows',\
                 'Attractive','Bags_Under_Eyes','Bald','Bangs','Big_Lips',\
@@ -20,7 +21,7 @@ CELEBA_PART_TXT = 'celeba_info/list_eval_partition.txt'
 TRAIN_DIR = "data/train_2_corr"
 VAL_DIR = "data/val_2_corr"
 TEST_DIR = "data/test_2_corr"
-MODEL_PATH = "resnet_models/new_resnet_2_corr.pth" # destination path if training new resnet model
+MODEL_PATH = "resnet_models/resnet_2_corr.pth" # destination path if training new resnet model
 IMG_WIDTH = 75
 IMG_HEIGHT = 75
 NUM_CORRS = 2 # Should be 1 or 2
