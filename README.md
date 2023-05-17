@@ -1,7 +1,8 @@
 # Kincannon Wilson Spring '23 Research
 
 This is the repo for my research during Spring 2023.
-It's currently a work in progress. The research involves
+It's currently a work in progress, and the contained
+here is entirely experimental. The research involves
 using CLIP and SVMs to identify multiple failure 
 directions for a trained classifier. Feel free to 
 shoot me an email at kgwilson2@wisc.edu if 
@@ -52,7 +53,7 @@ unzip img_align_celeba.zip
 
 Create and fill the train/val/test directories
 ```
-python3 make_dataset.py
+python3 dataset_utils/make_celeba_split.py
 ```
 
 Before continuing, make sure the environment
