@@ -16,6 +16,57 @@ and [Utkarsh Ojha](https://utkarshojha.github.io/).
 
 ---
 
+## Overview
+
+Deep learning models often exhibit consistent patterns of error,
+often failing on hard sub-populations in the data. For instance, 
+in a dataset where old men and young women are over-represented,
+a binrary age classifier (with output 'old' or 'young') 
+trained on such a dataset will likely rely on this 
+false correlation to make its judgements.
+
+My research work in the Spring '23 semester involved recreating, 
+from scratch, the research produced by the Madry lab in the 
+paper linked above. This research involves training an SVM
+(for each class, such as 'old' or 'young' in the data) on the 
+CLIP embedding space to predict which images the original
+classifier got correct or incorrect. Because the SVM generates
+a decision boundary, the normal vector to the boundary 
+represents the primary failure direction of the model. For instance,
+in our age classifier example, for the SVM trained on the embeddings 
+for images in the 'old' class, we would expect more females on the
+'incorrect' side as we get further from the boundary and more males 
+on the 'correct' side as we get further away from the boundary.
+
+Next, I began experimenting with more
+complicated combinations of technologies such as SVMs plus
+GMMs (Gaussian Mixture Models) in an effort to make the 
+description of failure directions more robust and in order
+to detect multiple failure directions of a classifier. 
+For example, such an approach could detect that the classifier
+learned a false correlation between the target classes 
+(old/young) and sex (male/female) as well as a correlation
+between the target classes and an additional factor such as 
+facial pose (smiling/not smiling).
+
+As my first foray into graduate-level research, this semester 
+taught me so much! In particular, I learned more about the following 
+technologies:
+
+- PyTorch
+- ResNet
+- SVMs (Support Vector Machines)
+- GMMs (Gaussian Mixture Models)
+- CLIP (OpenAI's Contrastive Language-Image Pre-training model)
+
+Please check out some of the contents of the "results" folder 
+in this repo to see some figures illustrating my results. 
+Feel free to poke around the rest of the code base and 
+please shoot me an email at CannonGWilson@gmail.com 
+if you have any questions!
+
+---
+
 ## Setup
 
 This setup process assumes python is downloaded.
